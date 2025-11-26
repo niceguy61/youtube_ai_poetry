@@ -1,0 +1,9 @@
+{
+  "name": "Test AI Integration",
+  "description": "Validate AI provider integration when AI-related files are saved",
+  "trigger": "onFileSave",
+  "filePattern": "src/ai/**/*.{ts,tsx}",
+  "action": "runCommand",
+  "command": "npm test -- src/ai --run",
+  "enabled": true
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Update Steering Docs Reminder",
+  "description": "Remind to update steering docs when significant changes are made",
+  "trigger": "onFileSave",
+  "filePattern": "src/{core,services}/**/*.ts",
+  "action": "sendMessage",
+  "message": "💡 If you've changed core interfaces or patterns, consider updating the steering documents in .kiro/steering/",
+  "enabled": true
+}

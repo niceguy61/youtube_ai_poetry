@@ -1,0 +1,9 @@
+{
+  "name": "Lint on Save",
+  "description": "Run ESLint on saved TypeScript files to catch issues early",
+  "trigger": "onFileSave",
+  "filePattern": "src/**/*.{ts,tsx}",
+  "action": "runCommand",
+  "command": "npx eslint ${filePath} --fix",
+  "enabled": true
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Run All Tests",
+  "description": "Manual hook to run all tests - click to execute",
+  "trigger": "manual",
+  "action": "runCommand",
+  "command": "npm test -- --run",
+  "enabled": true
+}

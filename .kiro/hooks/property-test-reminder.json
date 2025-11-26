@@ -1,0 +1,9 @@
+{
+  "name": "Property Test Reminder",
+  "description": "Remind to write property tests for new validators or core logic",
+  "trigger": "onFileSave",
+  "filePattern": "src/**/*{Validator,Manager,Generator,Engine}.ts",
+  "action": "sendMessage",
+  "message": "🧪 Remember to add property-based tests for this component using fast-check. Check the design doc for required properties.",
+  "enabled": true
+}

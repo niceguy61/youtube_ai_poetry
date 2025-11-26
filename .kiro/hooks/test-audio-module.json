@@ -1,0 +1,9 @@
+{
+  "name": "Test Audio Module",
+  "description": "Automatically run audio module tests when audio-related files are saved",
+  "trigger": "onFileSave",
+  "filePattern": "src/audio/**/*.{ts,tsx}",
+  "action": "runCommand",
+  "command": "npm test -- src/audio --run",
+  "enabled": true
+}

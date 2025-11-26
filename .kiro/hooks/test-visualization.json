@@ -1,0 +1,9 @@
+{
+  "name": "Test Visualization Module",
+  "description": "Run visualization tests when visualization files are saved",
+  "trigger": "onFileSave",
+  "filePattern": "src/visualization/**/*.{ts,tsx}",
+  "action": "runCommand",
+  "command": "npm test -- src/visualization --run",
+  "enabled": true
+}

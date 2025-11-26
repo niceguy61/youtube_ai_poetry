@@ -1,0 +1,9 @@
+{
+  "name": "Performance Check Reminder",
+  "description": "Remind about performance targets when modifying visualization or audio code",
+  "trigger": "onFileSave",
+  "filePattern": "src/{visualization,audio}/**/*.{ts,tsx}",
+  "action": "sendMessage",
+  "message": "⚡ Performance targets: 60 FPS for visualization, <10ms for audio analysis. Consider profiling if adding heavy operations.",
+  "enabled": true
+}

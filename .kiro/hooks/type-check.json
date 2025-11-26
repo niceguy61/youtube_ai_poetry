@@ -1,0 +1,9 @@
+{
+  "name": "Type Check",
+  "description": "Run TypeScript type checking when core files are modified",
+  "trigger": "onFileSave",
+  "filePattern": "src/{core,services,types}/**/*.{ts,tsx}",
+  "action": "runCommand",
+  "command": "npx tsc --noEmit",
+  "enabled": true
+}
