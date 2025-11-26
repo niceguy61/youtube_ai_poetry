@@ -3,56 +3,94 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AudioInput } from './AudioInput';
 
 describe('AudioInput Component', () => {
-  it('should render file upload mode by default', () => {
-    const onFileSelect = vi.fn();
+  it('should render with Card and Input components', () => {
     const onUrlSubmit = vi.fn();
     
-    render(<AudioInput onFileSelect={onFileSelect} onUrlSubmit={onUrlSubmit} />);
+    render(<AudioInput onUrlSubmit={onUrlSubmit} />);
     
-    expect(screen.getByText('Choose Audio File')).toBeInTheDocument();
-    expect(screen.getByText('Supports MP3 and OGG (max 5 minutes)')).toBeInTheDocument();
+    // Check for Card header title
+    expect(screen.getByText('Audio Source')).toBeInTheDocument();
+    
+    // Check for Input placeholder
+    expect(screen.getByPlaceholderText('Paste a YouTube link and press Enter...')).toBeInTheDocument();
   });
 
-  it('should switch to URL mode when URL button is clicked', () => {
-    const onFileSelect = vi.fn();
+  it('should disable input when loading', () => {
     const onUrlSubmit = vi.fn();
     
-    render(<AudioInput onFileSelect={onFileSelect} onUrlSubmit={onUrlSubmit} />);
+    render(<AudioInput onUrlSubmit={onUrlSubmit} isLoading={true} />);
     
-    const urlButton = screen.getByText('URL / YouTube');
-    fireEvent.click(urlButton);
-    
-    expect(screen.getByPlaceholderText('Enter audio URL or YouTube link...')).toBeInTheDocument();
-    expect(screen.getByText('Load Audio')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Paste a YouTube link and press Enter...');
+    expect(input).toBeDisabled();
   });
 
-  it('should disable inputs when loading', () => {
-    const onFileSelect = vi.fn();
+  it('should show loading spinner when loading', () => {
     const onUrlSubmit = vi.fn();
     
-    render(<AudioInput onFileSelect={onFileSelect} onUrlSubmit={onUrlSubmit} isLoading={true} />);
+    render(<AudioInput onUrlSubmit={onUrlSubmit} isLoading={true} />);
     
-    const uploadButton = screen.getByText(/Loading/);
-    expect(uploadButton).toBeDisabled();
+    // Check for loading spinner (aria-busy attribute)
+    const input = screen.getByPlaceholderText('Paste a YouTube link and press Enter...');
+    expect(input).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('should call onUrlSubmit when URL form is submitted', () => {
-    const onFileSelect = vi.fn();
+  it('should call onUrlSubmit when form is submitted with valid URL', () => {
     const onUrlSubmit = vi.fn();
     
-    render(<AudioInput onFileSelect={onFileSelect} onUrlSubmit={onUrlSubmit} />);
-    
-    // Switch to URL mode
-    fireEvent.click(screen.getByText('URL / YouTube'));
+    render(<AudioInput onUrlSubmit={onUrlSubmit} />);
     
     // Enter URL
-    const input = screen.getByPlaceholderText('Enter audio URL or YouTube link...');
-    fireEvent.change(input, { target: { value: 'https://example.com/audio.mp3' } });
+    const input = screen.getByPlaceholderText('Paste a YouTube link and press Enter...');
+    fireEvent.change(input, { target: { value: 'https://youtube.com/watch?v=test' } });
     
     // Submit form
-    const submitButton = screen.getByText('Load Audio');
-    fireEvent.click(submitButton);
+    const form = input.closest('form');
+    fireEvent.submit(form!);
     
-    expect(onUrlSubmit).toHaveBeenCalledWith('https://example.com/audio.mp3');
+    expect(onUrlSubmit).toHaveBeenCalledWith('https://youtube.com/watch?v=test');
+  });
+
+  it('should not call onUrlSubmit when form is submitted with empty URL', () => {
+    const onUrlSubmit = vi.fn();
+    
+    render(<AudioInput onUrlSubmit={onUrlSubmit} />);
+    
+    // Submit form without entering URL
+    const input = screen.getByPlaceholderText('Paste a YouTube link and press Enter...');
+    const form = input.closest('form');
+    fireEvent.submit(form!);
+    
+    expect(onUrlSubmit).not.toHaveBeenCalled();
+  });
+
+  it('should trim whitespace from URL before submitting', () => {
+    const onUrlSubmit = vi.fn();
+    
+    render(<AudioInput onUrlSubmit={onUrlSubmit} />);
+    
+    // Enter URL with whitespace
+    const input = screen.getByPlaceholderText('Paste a YouTube link and press Enter...');
+    fireEvent.change(input, { target: { value: '  https://youtube.com/watch?v=test  ' } });
+    
+    // Submit form
+    const form = input.closest('form');
+    fireEvent.submit(form!);
+    
+    expect(onUrlSubmit).toHaveBeenCalledWith('https://youtube.com/watch?v=test');
+  });
+
+  it('should apply custom styling classes', () => {
+    const onUrlSubmit = vi.fn();
+    
+    render(<AudioInput onUrlSubmit={onUrlSubmit} />);
+    
+    const input = screen.getByPlaceholderText('Paste a YouTube link and press Enter...');
+    
+    // Check for custom styling classes
+    expect(input).toHaveClass('bg-white/5');
+    expect(input).toHaveClass('border-white/10');
+    expect(input).toHaveClass('focus:ring-primary');
+    expect(input).toHaveClass('transition-all');
+    expect(input).toHaveClass('duration-300');
   });
 });

@@ -109,7 +109,7 @@ describe('ControlPanel Component', () => {
     expect(playButton).toBeDisabled();
   });
 
-  it('should show correct status indicator', () => {
+  it('should show correct status indicator with Badge component', () => {
     const mockHandlers = {
       onPlay: vi.fn(),
       onPause: vi.fn(),
@@ -126,7 +126,7 @@ describe('ControlPanel Component', () => {
       />
     );
     
-    expect(screen.getByText('▶ Playing')).toBeInTheDocument();
+    expect(screen.getByText('Playing')).toBeInTheDocument();
     
     rerender(
       <ControlPanel
@@ -137,6 +137,39 @@ describe('ControlPanel Component', () => {
       />
     );
     
-    expect(screen.getByText('⏸ Paused')).toBeInTheDocument();
+    expect(screen.getByText('Paused')).toBeInTheDocument();
+    
+    rerender(
+      <ControlPanel
+        playbackState="stopped"
+        currentTime={0}
+        duration={180}
+        {...mockHandlers}
+      />
+    );
+    
+    expect(screen.getByText('Stopped')).toBeInTheDocument();
+    
+    rerender(
+      <ControlPanel
+        playbackState="loading"
+        currentTime={0}
+        duration={180}
+        {...mockHandlers}
+      />
+    );
+    
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    
+    rerender(
+      <ControlPanel
+        playbackState="error"
+        currentTime={0}
+        duration={180}
+        {...mockHandlers}
+      />
+    );
+    
+    expect(screen.getByText('Error')).toBeInTheDocument();
   });
 });

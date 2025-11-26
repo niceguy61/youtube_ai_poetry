@@ -76,7 +76,7 @@ export function StorytellingDisplay({ currentMessage, className = '' }: Storytel
             {getMessageIcon(displayMessage.type)}
           </div>
           <div className="flex-1">
-            <div className={`text-sm font-semibold mb-1 ${messageStyles.label}`}>
+            <div className={`text-base font-bold mb-1 ${messageStyles.label}`}>
               {getMessageLabel(displayMessage.type)}
             </div>
             <div className="text-base leading-relaxed whitespace-pre-line">
