@@ -17,61 +17,123 @@ Key design principles:
 
 ### High-Level Architecture
 
+**Current Implementation:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     User Interface Layer                     │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
 │  │ Audio Input  │  │ Visualization│  │   Poetry     │      │
-│  │   Controls   │  │   Canvas     │  │   Display    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-                            │
-┌─────────────────────────────────────────────────────────────┐
-│                   Application Core Layer                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Audio      │  │Visualization │  │   Poetry     │      │
-│  │   Manager    │  │   Engine     │  │  Generator   │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Canvas     │  │  Storytelling│  │    Export    │      │
-│  │  Controller  │  │   Manager    │  │   Manager    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-                            │
-┌─────────────────────────────────────────────────────────────┐
-│                    Service Layer                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Audio      │  │   Duration   │  │  AI Provider │      │
-│  │   Analyzer   │  │  Validator   │  │   Service    │      │
+│  │ (YouTube URL)│  │   Canvas     │  │   Display    │      │
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
 │  ┌──────────────┐  ┌──────────────┐                        │
-│  │   YouTube    │  │   URL Audio  │                        │
-│  │   Extractor  │  │   Fetcher    │                        │
+│  │ Music Info   │  │ Storytelling │                        │
+│  │ (Thumbnail)  │  │   Display    │                        │
 │  └──────────────┘  └──────────────┘                        │
 └─────────────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│                   Frontend Core Layer                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ HTML5 Audio  │  │Visualization │  │   Poetry     │      │
+│  │   Player     │  │   Engine     │  │  Generator   │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ Web Audio    │  │Visualization │  │ Storytelling │      │
+│  │   Analyzer   │  │Config Gen    │  │   Manager    │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│                    Backend Service Layer                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Node.js    │  │    yt-dlp    │  │   Python     │      │
+│  │   Express    │  │   YouTube    │  │   librosa    │      │
+│  │   Server     │  │  Downloader  │  │   Analyzer   │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│  ┌──────────────┐  ┌──────────────┐                        │
+│  │  Thumbnail   │  │  Audio File  │                        │
+│  │    Proxy     │  │   Serving    │                        │
+│  └──────────────┘  └──────────────┘                        │
+└─────────────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│                    AI Service Layer                          │
+│  ┌──────────────┐  ┌──────────────┐                        │
+│  │    Ollama    │  │    Ollama    │                        │
+│  │   Poetry     │  │Visualization │                        │
+│  │  Generator   │  │Config Gen    │                        │
+│  └──────────────┘  └──────────────┘                        │
+│  (gemma3:4b model - Korean poetry in Hamlet voice)          │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+**Architecture Changes:**
+1. **Backend-First Processing**: Audio download and analysis moved to backend
+2. **Dual AI Services**: Separate AI calls for poetry and visualization configuration
+3. **Simplified Frontend**: HTML5 audio player instead of custom AudioManager
+4. **Real-time Visualization**: Web Audio API for live frequency/time domain data
+5. **Thumbnail Proxy**: Backend proxy to handle CORS for YouTube thumbnails
 
 ### Component Interaction Flow
 
+**Current Implementation (YouTube-based workflow):**
+
 ```
-User Input → Audio Manager → Duration Validator
-                ↓
-         Audio Analyzer (Web Audio API)
-                ↓
-         ┌──────┴──────┐
-         ↓             ↓
-  Visualization    Poetry Generator
-     Engine       (Ollama/Bedrock)
-         ↓             ↓
-    Canvas        Poetry Display
-   Controller          ↓
-         ↓        Storytelling
-    Interactive      Manager
-     Canvas            ↓
-         └──────┬──────┘
-                ↓
-          Export Manager
+User Input (YouTube URL)
+        ↓
+Backend Server (Node.js + Express)
+        ↓
+    yt-dlp (YouTube Audio Download)
+        ↓
+    Python librosa (Comprehensive Audio Analysis)
+        ├─ Tempo, Key, Energy, Valence
+        ├─ Spectral Features (Centroid, Rolloff)
+        ├─ MFCC (Timbre)
+        └─ Derived: Mood, Intensity, Complexity
+        ↓
+Frontend receives:
+    ├─ Audio File (MP3)
+    ├─ Analysis Data (librosa features)
+    └─ Video Info (title, thumbnail, duration)
+        ↓
+    ┌───────┴───────┐
+    ↓               ↓
+Poetry Generator    Visualization Config Generator
+(Ollama AI)         (Ollama AI)
+    ↓               ↓
+Korean Poetry       Dynamic Visualization Parameters
+(~500 chars)        (colors, speeds, counts, effects)
+    ↓               ↓
+    └───────┬───────┘
+            ↓
+    HTML5 Audio Player + Canvas Visualization
+            ↓
+    Web Audio API (Real-time Analysis)
+            ├─ Frequency Data
+            ├─ Time Domain Data
+            ├─ BPM Detection
+            └─ Energy Calculation
+            ↓
+    Visualization Engine (60 FPS)
+            ├─ Gradient (BPM-synced)
+            ├─ Equalizer (Frequency bars)
+            ├─ Spotlight (Animated lights)
+            └─ Combined Mode
+            ↓
+    Interactive Canvas
+            ├─ YouTube Thumbnail Background
+            ├─ Gradient Overlay
+            └─ Real-time Audio Response
 ```
+
+**Key Changes from Original Design:**
+1. **Backend-First Architecture**: Audio download and analysis happen on backend before frontend receives data
+2. **Librosa Integration**: Comprehensive audio analysis using Python librosa instead of Web Audio API only
+3. **AI-Driven Configuration**: Visualization parameters are dynamically generated by AI based on music analysis
+4. **Immediate Poetry Generation**: Poetry is generated once after analysis, not periodically during playback
+5. **HTML5 Audio Player**: Uses native audio element instead of AudioManager for simpler playback
+6. **Dual Analysis**: Backend librosa for comprehensive features, frontend Web Audio API for real-time visualization
 
 ## Components and Interfaces
 

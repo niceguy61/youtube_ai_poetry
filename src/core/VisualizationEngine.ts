@@ -537,9 +537,9 @@ export class VisualizationEngine {
       case 'gradient':
         return ['background-gradient'];
       case 'equalizer':
-        return ['background-gradient', 'equalizer-bars'];
+        return ['equalizer-bars'];
       case 'spotlight':
-        return ['background-gradient', 'spotlight-effects'];
+        return ['spotlight-effects'];
       case 'ai-image':
         return ['ai-generated-image'];
       case 'combined':
