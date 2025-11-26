@@ -10,6 +10,12 @@ An immersive web application that transforms YouTube music into a multi-sensory 
 
 ## ✨ Features
 
+### 🎨 Modern UI Design
+- **Dark Theme**: Elegant dark charcoal gray gradient background
+- **Burgundy Accents**: Professional burgundy (#800020) header and footer
+- **Glassmorphism**: Frosted glass effect cards with backdrop blur
+- **shadcn/ui Components**: Polished, accessible UI components
+
 ### 🎵 YouTube Audio Integration
 - Paste any YouTube URL to instantly analyze and visualize music
 - Powered by yt-dlp for reliable audio extraction
@@ -46,7 +52,8 @@ An immersive web application that transforms YouTube music into a multi-sensory 
 ### Frontend
 - **Framework**: React 18+ with TypeScript
 - **Build Tool**: Vite (fast HMR, optimized builds)
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS v4 with shadcn/ui components
+- **UI Components**: shadcn/ui (Button, Input, Card, Slider, Toggle, etc.)
 - **State Management**: Zustand (lightweight)
 - **Audio Processing**: Web Audio API (native browser support)
 - **Visualization**: HTML5 Canvas 2D API

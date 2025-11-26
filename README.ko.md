@@ -10,6 +10,12 @@ YouTube 음악을 실시간 오디오 시각화, AI 생성 한글 시(햄릿의 
 
 ## ✨ 주요 기능
 
+### 🎨 모던 UI 디자인
+- **다크 테마**: 우아한 다크 차콜 그레이 그라데이션 배경
+- **버건디 악센트**: 전문적인 버건디(#800020) 헤더와 푸터
+- **글래스모피즘**: 백드롭 블러 효과의 반투명 유리 카드
+- **shadcn/ui 컴포넌트**: 세련되고 접근성 높은 UI 컴포넌트
+
 ### 🎵 YouTube 오디오 통합
 - YouTube URL을 붙여넣으면 즉시 음악 분석 및 시각화
 - yt-dlp 기반의 안정적인 오디오 추출
@@ -46,7 +52,8 @@ YouTube 음악을 실시간 오디오 시각화, AI 생성 한글 시(햄릿의 
 ### 프론트엔드
 - **프레임워크**: React 18+ with TypeScript
 - **빌드 도구**: Vite (빠른 HMR, 최적화된 빌드)
-- **스타일링**: Tailwind CSS
+- **스타일링**: Tailwind CSS v4 with shadcn/ui 컴포넌트
+- **UI 컴포넌트**: shadcn/ui (Button, Input, Card, Slider, Toggle 등)
 - **상태 관리**: Zustand (경량)
 - **오디오 처리**: Web Audio API (네이티브 브라우저 지원)
 - **시각화**: HTML5 Canvas 2D API
