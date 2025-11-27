@@ -9,4 +9,13 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["PoetryFunction"]
 
+[function_build_definitions.db7b6ffc-da23-47ee-aa63-f1b723439da4]
+packagetype = "Image"
+functions = ["YouTubeFunction"]
+
+[function_build_definitions.db7b6ffc-da23-47ee-aa63-f1b723439da4.metadata]
+DockerTag = "python3.12-v1"
+DockerContext = "D:\\github\\youtube_ai_poetry\\lambda\\youtube-function"
+Dockerfile = "Dockerfile"
+
 [layer_build_definitions]
