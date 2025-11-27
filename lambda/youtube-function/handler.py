@@ -13,6 +13,14 @@ from urllib.parse import urlparse, parse_qs
 from audio_analyzer import analyze_audio
 
 
+# Common yt-dlp options to bypass bot detection
+YTDLP_COMMON_OPTS = [
+    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    '--extractor-args', 'youtube:player_client=ios,web',
+    '--extractor-args', 'youtube:player_skip=webpage',
+]
+
+
 def lambda_handler(event, context):
     """
     Main Lambda handler for YouTube processing
@@ -58,14 +66,7 @@ def handle_youtube_info(query_params):
         
         # Use yt-dlp to get video info with bot mitigation
         result = subprocess.run(
-            [
-                'yt-dlp',
-                '--dump-json',
-                '--no-playlist',
-                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                '--extractor-args', 'youtube:player_client=android',
-                url
-            ],
+            ['yt-dlp', '--dump-json', '--no-playlist'] + YTDLP_COMMON_OPTS + [url],
             capture_output=True,
             text=True,
             timeout=30
@@ -129,14 +130,7 @@ def handle_youtube_audio_with_analysis(query_params):
         
         # First, get video info to check duration with bot mitigation
         info_result = subprocess.run(
-            [
-                'yt-dlp',
-                '--dump-json',
-                '--no-playlist',
-                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                '--extractor-args', 'youtube:player_client=android',
-                url
-            ],
+            ['yt-dlp', '--dump-json', '--no-playlist'] + YTDLP_COMMON_OPTS + [url],
             capture_output=True,
             text=True,
             timeout=30
@@ -169,11 +163,8 @@ def handle_youtube_audio_with_analysis(query_params):
                 '--extract-audio',
                 '--audio-format', 'mp3',
                 '--no-playlist',
-                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                '--extractor-args', 'youtube:player_client=android',
-                '-o', audio_file,
-                url
-            ],
+                '-o', audio_file
+            ] + YTDLP_COMMON_OPTS + [url],
             capture_output=True,
             text=True,
             timeout=45
