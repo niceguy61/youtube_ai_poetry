@@ -56,9 +56,16 @@ def handle_youtube_info(query_params):
         
         print(f'[YouTube Info] Fetching info for: {url}')
         
-        # Use yt-dlp to get video info
+        # Use yt-dlp to get video info with bot mitigation
         result = subprocess.run(
-            ['yt-dlp', '--dump-json', '--no-playlist', url],
+            [
+                'yt-dlp',
+                '--dump-json',
+                '--no-playlist',
+                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                '--extractor-args', 'youtube:player_client=android',
+                url
+            ],
             capture_output=True,
             text=True,
             timeout=30
@@ -120,9 +127,16 @@ def handle_youtube_audio_with_analysis(query_params):
         
         print(f'[YouTube Audio+Analysis] Processing: {url}')
         
-        # First, get video info to check duration
+        # First, get video info to check duration with bot mitigation
         info_result = subprocess.run(
-            ['yt-dlp', '--dump-json', '--no-playlist', url],
+            [
+                'yt-dlp',
+                '--dump-json',
+                '--no-playlist',
+                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                '--extractor-args', 'youtube:player_client=android',
+                url
+            ],
             capture_output=True,
             text=True,
             timeout=30
@@ -155,6 +169,8 @@ def handle_youtube_audio_with_analysis(query_params):
                 '--extract-audio',
                 '--audio-format', 'mp3',
                 '--no-playlist',
+                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                '--extractor-args', 'youtube:player_client=android',
                 '-o', audio_file,
                 url
             ],
