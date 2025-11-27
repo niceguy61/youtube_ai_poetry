@@ -38,3 +38,8 @@ coverage
 backend/node_modules
 backend/.env
 backend/package-lock.json
+
+infra*
+iam_role*
+github_secrets*
+quick_reference*

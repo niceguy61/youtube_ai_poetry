@@ -12,15 +12,15 @@ import { CONFIG } from '../config/config';
 export class AudioAnalyzer {
   private audioContext: AudioContext | null = null;
   private analyserNode: AnalyserNode | null = null;
-  private sourceNode: AudioBufferSourceNode | null = null;
-  private frequencyData: Uint8Array | null = null;
-  private timeDomainData: Uint8Array | null = null;
+  private sourceNode: AudioBufferSourceNode | MediaElementAudioSourceNode | null = null;
+  private frequencyData: Uint8Array<ArrayBuffer> | null = null;
+  private timeDomainData: Uint8Array<ArrayBuffer> | null = null;
   private initialized = false;
 
   /**
    * Initialize the analyzer with audio context and source
    */
-  initialize(audioContext: AudioContext, source: AudioBufferSourceNode): void {
+  initialize(audioContext: AudioContext, source: AudioBufferSourceNode | MediaElementAudioSourceNode): void {
     if (this.initialized) {
       this.disconnect();
     }
@@ -41,8 +41,8 @@ export class AudioAnalyzer {
 
     // Initialize data arrays
     const bufferLength = this.analyserNode.frequencyBinCount;
-    this.frequencyData = new Uint8Array(bufferLength);
-    this.timeDomainData = new Uint8Array(bufferLength);
+    this.frequencyData = new Uint8Array(bufferLength) as Uint8Array<ArrayBuffer>;
+    this.timeDomainData = new Uint8Array(bufferLength) as Uint8Array<ArrayBuffer>;
 
     this.initialized = true;
   }

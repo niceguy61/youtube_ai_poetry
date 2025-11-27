@@ -1,0 +1,107 @@
+name: Deploy Frontend to AWS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  id-token: write  # Required for OIDC authentication
+  contents: read   # Required to checkout code
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build production bundle
+        env:
+          VITE_API_ENDPOINT: ${{ secrets.VITE_API_ENDPOINT }}
+          VITE_AI_PROVIDER: bedrock
+          VITE_AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: npm run build
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: GitHubActions-FrontendDeploy
+      
+      - name: Sync static assets to S3 (with cache headers)
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }}/ \
+            --delete \
+            --exclude "index.html" \
+            --cache-control "public, max-age=31536000, immutable"
+      
+      - name: Upload index.html to S3 (no-cache headers)
+        run: |
+          aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html"
+      
+      - name: Create CloudFront invalidation
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          echo "Invalidation ID: $INVALIDATION_ID"
+          echo "INVALIDATION_ID=$INVALIDATION_ID" >> $GITHUB_ENV
+      
+      - name: Wait for CloudFront invalidation to complete
+        run: |
+          echo "Waiting for invalidation $INVALIDATION_ID to complete..."
+          aws cloudfront wait invalidation-completed \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --id $INVALIDATION_ID
+          echo "Invalidation completed successfully"
+      
+      - name: Verify S3 sync success
+        run: |
+          echo "Verifying S3 deployment..."
+          FILE_COUNT=$(aws s3 ls s3://${{ secrets.S3_BUCKET_NAME }}/ --recursive | wc -l)
+          echo "Total files in S3 bucket: $FILE_COUNT"
+          if [ "$FILE_COUNT" -eq 0 ]; then
+            echo "ERROR: No files found in S3 bucket"
+            exit 1
+          fi
+          echo "S3 sync verified successfully"
+      
+      - name: Get CloudFront distribution info
+        run: |
+          CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
+            --id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --query 'Distribution.DomainName' \
+            --output text)
+          echo "CLOUDFRONT_DOMAIN=$CLOUDFRONT_DOMAIN" >> $GITHUB_ENV
+          echo "CloudFront Domain: $CLOUDFRONT_DOMAIN"
+      
+      - name: Output deployment summary
+        run: |
+          echo "=========================================="
+          echo "Deployment completed successfully!"
+          echo "=========================================="
+          echo "CloudFront URL: https://$CLOUDFRONT_DOMAIN"
+          echo "S3 Bucket: ${{ secrets.S3_BUCKET_NAME }}"
+          echo "Distribution ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
+          echo "Invalidation ID: $INVALIDATION_ID"
+          echo "=========================================="
+          echo "Your application is now live at:"
+          echo "https://$CLOUDFRONT_DOMAIN"
+          echo "=========================================="

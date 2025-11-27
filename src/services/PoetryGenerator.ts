@@ -431,7 +431,7 @@ Follow the template format strictly. Output ONLY the poem, nothing else.`;
     const baseOptions = getDefaultGenerationOptions();
     
     // Adjust temperature based on tone
-    let temperature = baseOptions.temperature;
+    let temperature: number = baseOptions.temperature;
     if (this.currentStyle.tone === 'dramatic') {
       temperature = 0.9; // More creative
     } else if (this.currentStyle.tone === 'calm') {
@@ -440,7 +440,7 @@ Follow the template format strictly. Output ONLY the poem, nothing else.`;
 
     // Adjust max tokens based on length
     // Note: Qwen3 uses thinking mode which consumes tokens, so we need higher limits
-    let maxTokens = baseOptions.maxTokens;
+    let maxTokens: number = baseOptions.maxTokens;
     if (this.currentStyle.length === 'short') {
       maxTokens = 300; // Increased for thinking models
     } else if (this.currentStyle.length === 'long') {

@@ -165,7 +165,7 @@ IMPORTANT: Return ONLY the complete JSON object above. No thinking process, no e
       // Validate and sanitize
       return {
         gradient: {
-          colors: this.validateColors(config.gradient?.colors, 2),
+          colors: this.validateColors(config.gradient?.colors, 2) as [string, string],
           speed: this.clamp(config.gradient?.speed ?? 1.0, 0.5, 2.0),
         },
         equalizer: {
