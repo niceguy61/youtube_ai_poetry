@@ -296,7 +296,7 @@ function App() {
       
       if (isYouTube) {
         // Use audio-with-analysis endpoint (downloads, analyzes, and returns file)
-        const response = await fetch(`http://localhost:3001/api/youtube/audio-with-analysis?url=${encodeURIComponent(url)}`);
+        const response = await fetch(`${CONFIG.api.ENDPOINT}/api/youtube/audio-with-analysis?url=${encodeURIComponent(url)}`);
         const data = await response.json();
         
         if (!response.ok) {
@@ -304,7 +304,7 @@ function App() {
         }
 
         // Download the audio file as Blob and create object URL
-        const audioFileUrl = `http://localhost:3001/api/audio/${data.audioFile}`;
+        const audioFileUrl = `${CONFIG.api.ENDPOINT}/api/audio/${data.audioFile}`;
 
         const audioResponse = await fetch(audioFileUrl);
         if (!audioResponse.ok) {
