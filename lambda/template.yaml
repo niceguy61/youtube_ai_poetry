@@ -77,20 +77,20 @@ Resources:
   # ============================================================================
   # Thumbnail Proxy Function (Node.js)
   # ============================================================================
-  ThumbnailFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: thumbnail-function/
-      Handler: index.handler
-      Runtime: nodejs20.x
-      MemorySize: 256
-      Timeout: 10
-      Events:
-        ThumbnailProxy:
-          Type: Api
-          Properties:
-            Path: /api/thumbnail
-            Method: get
+  # ThumbnailFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: thumbnail-function/
+  #     Handler: index.handler
+  #     Runtime: nodejs20.x
+  #     MemorySize: 256
+  #     Timeout: 10
+  #     Events:
+  #       ThumbnailProxy:
+  #         Type: Api
+  #         Properties:
+  #           Path: /api/thumbnail
+  #           Method: get
 
   # ============================================================================
   # Lambda Layers
@@ -258,62 +258,62 @@ Resources:
   # CloudWatch Alarms - Thumbnail Function
   # ============================================================================
   
-  ThumbnailFunctionErrorAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Errors"
-      AlarmDescription: "Alert when Thumbnail Function error rate exceeds 5%"
-      MetricName: Errors
-      Namespace: AWS/Lambda
-      Statistic: Sum
-      Period: 300  # 5 minutes
-      EvaluationPeriods: 1
-      Threshold: 5
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref ThumbnailFunction
-      AlarmActions:
-        - !Ref AlarmNotificationTopic
-      TreatMissingData: notBreaching
+  # ThumbnailFunctionErrorAlarm:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Errors"
+  #     AlarmDescription: "Alert when Thumbnail Function error rate exceeds 5%"
+  #     MetricName: Errors
+  #     Namespace: AWS/Lambda
+  #     Statistic: Sum
+  #     Period: 300  # 5 minutes
+  #     EvaluationPeriods: 1
+  #     Threshold: 5
+  #     ComparisonOperator: GreaterThanThreshold
+  #     Dimensions:
+  #       - Name: FunctionName
+  #         Value: !Ref ThumbnailFunction
+  #     AlarmActions:
+  #       - !Ref AlarmNotificationTopic
+  #     TreatMissingData: notBreaching
 
-  ThumbnailFunctionDurationAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Duration"
-      AlarmDescription: "Alert when Thumbnail Function duration exceeds 80% of timeout (8s)"
-      MetricName: Duration
-      Namespace: AWS/Lambda
-      Statistic: Average
-      Period: 300  # 5 minutes
-      EvaluationPeriods: 2
-      Threshold: 8000  # 8 seconds in milliseconds (80% of 10s timeout)
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref ThumbnailFunction
-      AlarmActions:
-        - !Ref AlarmNotificationTopic
-      TreatMissingData: notBreaching
+  # ThumbnailFunctionDurationAlarm:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Duration"
+  #     AlarmDescription: "Alert when Thumbnail Function duration exceeds 80% of timeout (8s)"
+  #     MetricName: Duration
+  #     Namespace: AWS/Lambda
+  #     Statistic: Average
+  #     Period: 300  # 5 minutes
+  #     EvaluationPeriods: 2
+  #     Threshold: 8000  # 8 seconds in milliseconds (80% of 10s timeout)
+  #     ComparisonOperator: GreaterThanThreshold
+  #     Dimensions:
+  #       - Name: FunctionName
+  #         Value: !Ref ThumbnailFunction
+  #     AlarmActions:
+  #       - !Ref AlarmNotificationTopic
+  #     TreatMissingData: notBreaching
 
-  ThumbnailFunctionThrottleAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Throttles"
-      AlarmDescription: "Alert when Thumbnail Function is throttled"
-      MetricName: Throttles
-      Namespace: AWS/Lambda
-      Statistic: Sum
-      Period: 300  # 5 minutes
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref ThumbnailFunction
-      AlarmActions:
-        - !Ref AlarmNotificationTopic
-      TreatMissingData: notBreaching
+  # ThumbnailFunctionThrottleAlarm:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Throttles"
+  #     AlarmDescription: "Alert when Thumbnail Function is throttled"
+  #     MetricName: Throttles
+  #     Namespace: AWS/Lambda
+  #     Statistic: Sum
+  #     Period: 300  # 5 minutes
+  #     EvaluationPeriods: 1
+  #     Threshold: 1
+  #     ComparisonOperator: GreaterThanOrEqualToThreshold
+  #     Dimensions:
+  #       - Name: FunctionName
+  #         Value: !Ref ThumbnailFunction
+  #     AlarmActions:
+  #       - !Ref AlarmNotificationTopic
+  #     TreatMissingData: notBreaching
 
 Parameters:
   AlarmEmail:

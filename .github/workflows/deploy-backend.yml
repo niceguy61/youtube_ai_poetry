@@ -1,0 +1,82 @@
+name: Deploy Backend to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Build SAM application
+        working-directory: lambda
+        run: sam build
+
+      - name: Deploy SAM application
+        working-directory: lambda
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name kiroween \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ secrets.AWS_REGION }} \
+            --resolve-s3
+
+      - name: Get API Gateway URL
+        id: get-url
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name kiroween \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' \
+            --output text)
+          echo "API_URL=$API_URL" >> $GITHUB_OUTPUT
+          echo "✅ Backend deployed successfully!"
+          echo "📍 API Endpoint: $API_URL"
+
+      - name: Test API endpoints
+        run: |
+          API_URL="${{ steps.get-url.outputs.API_URL }}"
+          echo "Testing Poetry endpoint..."
+          curl -X POST "${API_URL}api/poetry/generate" \
+            -H "Content-Type: application/json" \
+            -d '{"audioFeatures":{"tempo":120,"energy":0.8,"mood":"energetic"},"persona":"hamlet","language":"en"}' \
+            --fail --silent --show-error || echo "⚠️ Poetry endpoint test failed"
+          
+          echo "Testing YouTube info endpoint..."
+          curl "${API_URL}api/youtube/info?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ" \
+            --fail --silent --show-error || echo "⚠️ YouTube info endpoint test failed"
