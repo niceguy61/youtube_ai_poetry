@@ -46,6 +46,35 @@ jobs:
         working-directory: lambda
         run: sam build
 
+      - name: Check and cleanup failed stacks
+        run: |
+          STACK_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name kiroween \
+            --query 'Stacks[0].StackStatus' \
+            --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+          
+          echo "Stack status: $STACK_STATUS"
+          
+          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ]; then
+            echo "⚠️ Stack is in ROLLBACK_COMPLETE state. Deleting..."
+            aws cloudformation delete-stack --stack-name kiroween
+            aws cloudformation wait stack-delete-complete --stack-name kiroween
+            echo "✅ Stack deleted successfully"
+          fi
+          
+          # Also check for companion stack
+          COMPANION_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name kiroween-0d4750de-CompanionStack \
+            --query 'Stacks[0].StackStatus' \
+            --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+          
+          if [ "$COMPANION_STATUS" = "ROLLBACK_COMPLETE" ]; then
+            echo "⚠️ Companion stack is in ROLLBACK_COMPLETE state. Deleting..."
+            aws cloudformation delete-stack --stack-name kiroween-0d4750de-CompanionStack
+            aws cloudformation wait stack-delete-complete --stack-name kiroween-0d4750de-CompanionStack
+            echo "✅ Companion stack deleted successfully"
+          fi
+
       - name: Deploy SAM application
         working-directory: lambda
         run: |
