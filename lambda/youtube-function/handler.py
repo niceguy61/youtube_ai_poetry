@@ -129,6 +129,7 @@ def handle_youtube_audio_with_analysis(query_params):
         )
         
         if info_result.returncode != 0:
+            print(f'[YouTube Audio+Analysis] yt-dlp error: {info_result.stderr}')
             return error_response(500, 'Failed to get video information')
         
         video_info = json.loads(info_result.stdout)
@@ -163,8 +164,8 @@ def handle_youtube_audio_with_analysis(query_params):
         )
         
         if download_result.returncode != 0:
-            print(f'[YouTube Audio+Analysis] Download error: {download_result.stderr}')
-            return error_response(500, 'Failed to download audio')
+            print(f'[YouTube Audio+Analysis] Download error (returncode={download_result.returncode}): {download_result.stderr}')
+            return error_response(500, 'Failed to download audio', {'stderr': download_result.stderr[:500]})
         
         print(f'[YouTube Audio+Analysis] Download complete, analyzing...')
         
