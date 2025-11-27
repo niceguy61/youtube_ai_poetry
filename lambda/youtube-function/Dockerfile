@@ -2,13 +2,13 @@ FROM public.ecr.aws/lambda/python:3.12
 
 # Install system dependencies for librosa and audio processing
 # Amazon Linux 2023 uses dnf instead of yum
+# Note: ffmpeg removed - not needed for librosa, yt-dlp handles audio extraction
 RUN dnf install -y \
     gcc \
     gcc-c++ \
     make \
     libsndfile \
     libsndfile-devel \
-    ffmpeg \
     && dnf clean all
 
 # Copy requirements and install Python dependencies
