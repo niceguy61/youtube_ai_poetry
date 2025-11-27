@@ -170,10 +170,14 @@ def handle_youtube_audio_with_analysis(query_params):
         print(f'[YouTube Audio+Analysis] Download complete, analyzing...')
         
         # Analyze audio with librosa
+        print(f'[YouTube Audio+Analysis] Starting audio analysis...')
         analysis_result = analyze_audio(audio_file)
+        print(f'[YouTube Audio+Analysis] Analysis result: {analysis_result.get("success")}')
         
         if not analysis_result.get('success'):
-            return error_response(500, 'Audio analysis failed', analysis_result.get('error'))
+            error_msg = analysis_result.get('error', 'Unknown error')
+            print(f'[YouTube Audio+Analysis] Analysis failed: {error_msg}')
+            return error_response(500, 'Audio analysis failed', error_msg)
         
         features = analysis_result.get('features', {})
         
