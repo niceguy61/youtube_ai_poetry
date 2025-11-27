@@ -43,3 +43,5 @@ infra*
 iam_role*
 github_secrets*
 quick_reference*
+
+.aws-sam
