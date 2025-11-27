@@ -141,8 +141,9 @@ def handle_youtube_audio_with_analysis(query_params):
             })
         
         # Download audio to /tmp
-        timestamp = context.request_id if 'context' in locals() else str(os.getpid())
-        audio_file = f'/tmp/audio_{timestamp}.mp3'
+        # Use context.request_id for unique filename
+        request_id = context.request_id if context else str(os.getpid())
+        audio_file = f'/tmp/audio_{request_id}.mp3'
         
         print(f'[YouTube Audio+Analysis] Downloading to: {audio_file}')
         
