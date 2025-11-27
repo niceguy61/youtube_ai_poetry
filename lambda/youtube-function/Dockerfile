@@ -17,7 +17,7 @@ COPY requirements.txt ${LAMBDA_TASK_ROOT}
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
         librosa==0.10.1 \
-        numpy==1.24.3 \
+        numpy==1.26.4 \
         scipy==1.11.4 \
         soundfile==0.12.1
 
