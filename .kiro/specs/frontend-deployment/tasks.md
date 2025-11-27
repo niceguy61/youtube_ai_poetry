@@ -82,7 +82,7 @@
 
 - [x] 2.4 Add GitHub Secrets
   - Go to GitHub repository → Settings → Secrets and variables → Actions
-  - Add `AWS_ROLE_ARN` secret: `arn:aws:iam::ACCOUNT_ID:role/GithubActionRoleApi`
+  - Add `AWS_ROLE_ARN` secret: `arn:aws:iam::ACCOUNT_ID:role/GithubActionRole`
   - Add `AWS_REGION` secret: `ap-northeast-2`
   - Add `S3_BUCKET_NAME` secret: `kiroween.drumgoon.net`
   - Add `CLOUDFRONT_DISTRIBUTION_ID` secret: `E2XXT04YWS0DGE`
@@ -152,18 +152,18 @@
   - Add error handling for each step
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 4. Test deployment workflow
+- [x] 4. Test deployment workflow
   - Verify end-to-end deployment process
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 4.1 Test workflow execution
+- [x] 4.1 Test workflow execution
   - Push test commit to main branch
   - Monitor GitHub Actions workflow
   - Verify all steps complete successfully
   - Check workflow logs for errors
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 4.2 Verify deployment
+- [x] 4.2 Verify deployment
   - Access CloudFront URL
   - Verify homepage loads correctly
   - Test navigation (client-side routing)
@@ -172,18 +172,18 @@
   - Test on multiple browsers (Chrome, Firefox, Safari)
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 4.3 Test error scenarios
+- [x] 4.3 Test error scenarios
   - Test 404 handling (should return index.html)
   - Test direct URL access (should work with SPA routing)
   - Verify HTTPS redirect (HTTP → HTTPS)
   - Test cache invalidation (make change, verify update)
   - _Requirements: 1.4, 2.4, 6.4_
 
-- [ ] 5. Create documentation
+- [ ]* 5. Create documentation
   - Document setup process and deployment workflow
   - _Requirements: NFR-5_
 
-- [ ] 5.1 Create deployment guide
+- [ ]* 5.1 Create deployment guide
   - Create `DEPLOYMENT.md` in root directory
   - Document infrastructure setup steps
   - Document GitHub Secrets configuration
@@ -191,14 +191,14 @@
   - Document troubleshooting common issues
   - _Requirements: NFR-5_
 
-- [ ] 5.2 Update main README
+- [ ]* 5.2 Update main README
   - Add deployment section to `README.md`
   - Link to deployment guide
   - Document CloudFront URL
   - Add deployment status badge
   - _Requirements: NFR-5_
 
-- [ ] 5.3 Create rollback guide
+- [ ]* 5.3 Create rollback guide
   - Document rollback procedures
   - Document S3 versioning usage
   - Document manual deployment process
@@ -211,30 +211,34 @@
 After completing all tasks, verify:
 
 ### Infrastructure
-- [ ] S3 bucket exists and configured correctly
-- [ ] CloudFront distribution exists and deployed
-- [ ] IAM role exists with correct permissions
-- [ ] Bucket policy allows CloudFront access only
-- [ ] Static website hosting enabled
-- [ ] Versioning enabled on S3 bucket (recommended)
+- [ ]* S3 bucket exists and configured correctly
+- [ ]* CloudFront distribution exists and deployed
+- [ ]* IAM role exists with correct permissions
+- [ ]* Bucket policy allows CloudFront access only
+- [ ]* Static website hosting enabled
+- [ ]* Versioning enabled on S3 bucket (recommended)
 
 ### GitHub Configuration
-- [ ] All required secrets configured
+- [ ]* All required secrets configured
 - [ ] Secrets values are correct
-- [ ] .env.production updated
-- [ ] Production build works locally
+- [ ]* .env.production updated
+- [ ]* Production build works locally
 
 ### Workflow
-- [ ] Workflow file created and valid
-- [ ] Triggers configured correctly
-- [ ] OIDC authentication works
-- [ ] Build step completes successfully
-- [ ] S3 sync works correctly
-- [ ] CloudFront invalidation works
-- [ ] Error handling in place
+- [ ]* Workflow file created and valid
+- [ ]* Triggers configured correctly
+- [ ]* OIDC authentication works
+- [ ]* Build step completes successfully
+- [ ]* S3 sync works correctly
+- [ ]* CloudFront invalidation works
+- [ ]* Error handling in place
 
 ### Application
-- [ ] Homepage loads via CloudFront
+- [x] Homepage loads via CloudFront
+
+
+
+
 - [ ] Navigation works (SPA routing)
 - [ ] API calls work (poetry, YouTube)
 - [ ] No console errors

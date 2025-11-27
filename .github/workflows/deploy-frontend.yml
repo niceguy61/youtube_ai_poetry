@@ -83,25 +83,15 @@ jobs:
           fi
           echo "S3 sync verified successfully"
       
-      - name: Get CloudFront distribution info
-        run: |
-          CLOUDFRONT_DOMAIN=$(aws cloudfront get-distribution \
-            --id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --query 'Distribution.DomainName' \
-            --output text)
-          echo "CLOUDFRONT_DOMAIN=$CLOUDFRONT_DOMAIN" >> $GITHUB_ENV
-          echo "CloudFront Domain: $CLOUDFRONT_DOMAIN"
-      
       - name: Output deployment summary
         run: |
           echo "=========================================="
           echo "Deployment completed successfully!"
           echo "=========================================="
-          echo "CloudFront URL: https://$CLOUDFRONT_DOMAIN"
           echo "S3 Bucket: ${{ secrets.S3_BUCKET_NAME }}"
           echo "Distribution ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
           echo "Invalidation ID: $INVALIDATION_ID"
           echo "=========================================="
-          echo "Your application is now live at:"
-          echo "https://$CLOUDFRONT_DOMAIN"
+          echo "Note: CloudFront distribution updated"
+          echo "Changes may take 5-10 minutes to propagate"
           echo "=========================================="
