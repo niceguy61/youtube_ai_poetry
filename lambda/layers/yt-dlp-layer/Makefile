@@ -1,3 +1,4 @@
 build-YtdlpLayer:
-	powershell -Command "New-Item -ItemType Directory -Force -Path '$(ARTIFACTS_DIR)/bin'"
-	powershell -Command "Invoke-WebRequest -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp' -OutFile '$(ARTIFACTS_DIR)/bin/yt-dlp'"
+	mkdir -p "$(ARTIFACTS_DIR)/bin"
+	curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o "$(ARTIFACTS_DIR)/bin/yt-dlp"
+	chmod +x "$(ARTIFACTS_DIR)/bin/yt-dlp"
