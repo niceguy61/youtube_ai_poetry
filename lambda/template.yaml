@@ -46,22 +46,14 @@ Resources:
             Method: post
 
   # ============================================================================
-  # YouTube Processing Function (Python + yt-dlp + librosa)
+  # YouTube Processing Function (Container Image with yt-dlp + librosa)
   # ============================================================================
   YouTubeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: youtube-function/
-      Handler: handler.lambda_handler
-      Runtime: python3.11
+      PackageType: Image
       MemorySize: 2048
       Timeout: 60
-      Layers:
-        - !Ref YtdlpLayer
-        - !Ref PythonLibsLayer
-      Environment:
-        Variables:
-          PYTHONPATH: /opt/python
       Events:
         YouTubeInfo:
           Type: Api
@@ -73,6 +65,10 @@ Resources:
           Properties:
             Path: /api/youtube/audio-with-analysis
             Method: get
+    Metadata:
+      DockerTag: python3.11-v1
+      DockerContext: ./youtube-function
+      Dockerfile: Dockerfile
 
   # ============================================================================
   # Thumbnail Proxy Function (Node.js)
@@ -93,32 +89,8 @@ Resources:
   #           Method: get
 
   # ============================================================================
-  # Lambda Layers
+  # Lambda Layers removed - using Container Image for YouTube function
   # ============================================================================
-  
-  YtdlpLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: yt-dlp-layer
-      Description: yt-dlp binary for YouTube audio extraction
-      ContentUri: layers/yt-dlp-layer/
-      CompatibleRuntimes:
-        - python3.11
-      RetentionPolicy: Retain
-    Metadata:
-      BuildMethod: makefile
-
-  PythonLibsLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: python-libs-layer
-      Description: Python libraries for audio analysis (librosa, numpy, scipy)
-      ContentUri: layers/python-libs-layer/
-      CompatibleRuntimes:
-        - python3.11
-      RetentionPolicy: Retain
-    Metadata:
-      BuildMethod: python3.11
 
   # ============================================================================
   # Alarms removed to simplify deployment
