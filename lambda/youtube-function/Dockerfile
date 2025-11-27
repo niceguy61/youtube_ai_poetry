@@ -1,14 +1,15 @@
 FROM public.ecr.aws/lambda/python:3.12
 
 # Install system dependencies for librosa and audio processing
-RUN yum install -y \
+# Amazon Linux 2023 uses dnf instead of yum
+RUN dnf install -y \
     gcc \
     gcc-c++ \
     make \
     libsndfile \
     libsndfile-devel \
     ffmpeg \
-    && yum clean all
+    && dnf clean all
 
 # Copy requirements and install Python dependencies
 # Amazon Linux 2023 has gcc 11.x, so soxr compilation works
