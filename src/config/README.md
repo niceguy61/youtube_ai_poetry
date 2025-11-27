@@ -231,7 +231,7 @@ The configuration module exports several useful types:
 ```typescript
 import type { 
   AIProvider,           // 'ollama' | 'bedrock'
-  VisualizationMode,    // 'gradient' | 'equalizer' | 'spotlight' | 'ai-image' | 'combined'
+  VisualizationMode,    // 'gradient' | 'equalizer' | 'spotlight' | 'combined'
   NarrativeStyle,       // 'minimal' | 'descriptive' | 'poetic' | 'technical'
   LogLevel,             // 'debug' | 'info' | 'warn' | 'error'
   Environment           // 'development' | 'production' | 'test'

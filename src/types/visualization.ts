@@ -6,7 +6,6 @@ export type VisualizationMode =
   | 'gradient'
   | 'equalizer'
   | 'spotlight'
-  | 'ai-image'
   | 'combined';
 
 export type VisualizationLayer = 

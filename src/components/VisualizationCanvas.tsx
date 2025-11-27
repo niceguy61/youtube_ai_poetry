@@ -12,7 +12,6 @@ const VISUALIZATION_MODES: { value: VisualizationMode; label: string; icon: stri
   { value: 'gradient', label: 'Gradient', icon: '🌈' },
   { value: 'equalizer', label: 'Equalizer', icon: '📊' },
   { value: 'spotlight', label: 'Spotlight', icon: '💡' },
-  { value: 'ai-image', label: 'AI Image', icon: '🎨' },
   { value: 'combined', label: 'Combined', icon: '✨' },
 ];
 

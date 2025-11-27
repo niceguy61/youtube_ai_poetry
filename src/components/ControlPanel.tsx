@@ -74,19 +74,24 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   const hasAudio = duration > 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-white">Playback Controls</CardTitle>
+    <Card className="p-6 transition-all hover:shadow-lg hover:shadow-primary/10">
+      <CardHeader className="p-0 mb-4">
+        <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+          <CirclePlay className="h-5 w-5 text-primary" />
+          Playback Controls
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {/* Playback Buttons */}
-        <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="flex items-center justify-center gap-md mb-lg">
         <Button
           onClick={onStop}
           disabled={!hasAudio || playbackState === 'stopped' || isLoading}
           variant="outline"
           size="icon"
-          title="Stop"
+          title="Stop playback"
+          aria-label="Stop playback"
+          className="transition-all hover:scale-110 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <Square className="h-4 w-4" />
         </Button>
@@ -96,11 +101,12 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           disabled={!hasAudio || isLoading}
           variant="default"
           size="lg"
-          className="rounded-full"
+          className="rounded-full transition-all hover:scale-110 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           title={isPlaying ? 'Pause' : 'Play'}
+          aria-label={isPlaying ? 'Pause playback' : 'Play audio'}
         >
           {isLoading ? (
-            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <Loader2 className="h-6 w-6 animate-spin" />
           ) : isPlaying ? (
             <Pause className="h-6 w-6" />
           ) : (
@@ -110,8 +116,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-4">
-        <div className="flex items-center gap-3 mb-2">
+      <div className="mb-md">
+        <div className="flex items-center gap-md mb-sm">
           <span className="text-sm text-gray-300 font-mono min-w-[45px] transition-colors hover:text-white">
             {formatTime(localTime)}
           </span>
@@ -137,17 +143,18 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
       {/* Generate Poetry Button */}
       {onGeneratePoetry && hasAudio && (
-        <div className="mt-4">
+        <div className="mt-md">
           <Button
             onClick={onGeneratePoetry}
             disabled={isGeneratingPoetry || !isPlaying}
             variant="secondary"
-            className="w-full"
+            className="w-full transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             title="Generate new poetry from current audio"
+            aria-label="Generate poetry from audio"
           >
             {isGeneratingPoetry ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Generating...</span>
               </>
             ) : (
@@ -161,7 +168,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       )}
 
         {/* Status Indicator */}
-        <div className="mt-4 flex justify-center">
+        <div className="mt-md flex justify-center">
           {playbackState === 'playing' && (
             <Badge variant="default" className="bg-green-600 hover:bg-green-700 transition-colors duration-300">
               <CirclePlay className="h-3 w-3 mr-1" />

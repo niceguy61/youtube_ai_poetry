@@ -72,16 +72,23 @@ export class VisualizationConfigGenerator {
    */
   async generateConfig(analysis: LibrosaAnalysis): Promise<VisualizationConfig> {
     if (!this.aiProvider) {
+      console.warn('[VisualizationConfigGenerator] AI provider not available, using fallback');
       return this.getFallbackConfig(analysis);
     }
 
     try {
       const prompt = this.buildPrompt(analysis);
       const response = await this.aiProvider.generate(prompt, {
-        temperature: 0.7,
-        maxTokens: 500,
+        temperature: 0.3, // Lower temperature for more consistent JSON output
+        maxTokens: 800, // Increased for thinking models
         topP: 0.9,
       });
+
+      // Check for empty response
+      if (!response || response.trim() === '') {
+        console.warn('[VisualizationConfigGenerator] Empty response from AI, using fallback');
+        return this.getFallbackConfig(analysis);
+      }
 
       const config = this.parseAIResponse(response);
       return config;
@@ -99,13 +106,14 @@ Music Analysis:
 - Key: ${analysis.key}
 - Energy: ${analysis.energy.toFixed(2)} (0-1 scale)
 - Valence (positivity): ${analysis.valence.toFixed(2)} (0-1 scale)
-- Mood: ${analysis.mood}
+- PRIMARY MOOD: ${analysis.mood.toUpperCase()}
 - Intensity: ${analysis.intensity}
 - Complexity: ${analysis.complexity}
 - Spectral Centroid: ${analysis.spectral_centroid.toFixed(2)} (brightness)
 - Zero Crossing Rate: ${analysis.zero_crossing_rate.toFixed(4)} (percussiveness)
 
-Generate visualization parameters in this EXACT JSON format (no additional text):
+CRITICAL: Generate visualization parameters in this EXACT JSON format. Output ONLY valid JSON, no additional text, no thinking, no explanation:
+
 {
   "gradient": {
     "colors": ["#RRGGBB", "#RRGGBB"],
@@ -124,7 +132,7 @@ Generate visualization parameters in this EXACT JSON format (no additional text)
   }
 }
 
-Guidelines:
+Guidelines (reflect PRIMARY MOOD):
 - High energy → vibrant colors (red, orange, yellow), faster speed, more spotlights
 - Low energy → cool colors (blue, purple, green), slower speed, fewer spotlights
 - High valence (happy) → warm, bright colors
@@ -134,18 +142,25 @@ Guidelines:
 - High complexity → more spotlights (6-8), varied colors
 - Low complexity → fewer spotlights (3-4), similar colors
 
-Return ONLY the JSON, no explanation.`;
+IMPORTANT: Return ONLY the complete JSON object above. No thinking process, no explanation, just the JSON.`;
   }
 
   private parseAIResponse(response: string): VisualizationConfig {
     try {
-      // Extract JSON from response (AI might add extra text)
+      // Extract JSON from response (AI might add extra text or thinking process)
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
+        console.warn('[VisualizationConfigGenerator] No JSON found in response:', response.substring(0, 100));
         throw new Error('No JSON found in response');
       }
 
       const config = JSON.parse(jsonMatch[0]);
+      
+      // Validate required fields exist
+      if (!config.gradient || !config.equalizer || !config.spotlight) {
+        console.warn('[VisualizationConfigGenerator] Incomplete config from AI:', config);
+        throw new Error('Incomplete configuration');
+      }
       
       // Validate and sanitize
       return {
@@ -170,6 +185,7 @@ Return ONLY the JSON, no explanation.`;
       };
     } catch (error) {
       console.error('[VisualizationConfigGenerator] Failed to parse AI response:', error);
+      console.error('[VisualizationConfigGenerator] Response was:', response.substring(0, 200));
       throw error;
     }
   }

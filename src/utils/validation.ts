@@ -36,3 +36,18 @@ export function isValidAudioFile(filename: string): boolean {
   const lowerFilename = filename.toLowerCase();
   return validExtensions.some(ext => lowerFilename.endsWith(ext));
 }
+
+/**
+ * Validates OpenAI API key format
+ * OpenAI API keys start with 'sk-' and are at least 20 characters long
+ * @param apiKey API key string to validate
+ * @returns true if API key format is valid, false otherwise
+ */
+export function isValidOpenAIApiKey(apiKey: string): boolean {
+  if (!apiKey || typeof apiKey !== 'string') {
+    return false;
+  }
+  
+  // OpenAI API keys start with 'sk-' and are at least 20 characters
+  return apiKey.startsWith('sk-') && apiKey.length >= 20;
+}

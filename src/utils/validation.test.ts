@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { isValidDuration, isValidURL, isValidAudioFile } from './validation';
+import { isValidDuration, isValidURL, isValidAudioFile, isValidOpenAIApiKey } from './validation';
 
 describe('Validation Utilities', () => {
   describe('isValidDuration', () => {
@@ -64,6 +64,41 @@ describe('Validation Utilities', () => {
       expect(isValidAudioFile('video.mp4')).toBe(false);
       expect(isValidAudioFile('document.pdf')).toBe(false);
       expect(isValidAudioFile('noextension')).toBe(false);
+    });
+  });
+
+  describe('isValidOpenAIApiKey', () => {
+    it('should accept valid OpenAI API key format', () => {
+      expect(isValidOpenAIApiKey('sk-1234567890abcdefghij')).toBe(true);
+      expect(isValidOpenAIApiKey('sk-proj-1234567890abcdefghijklmnopqrstuvwxyz')).toBe(true);
+      expect(isValidOpenAIApiKey('sk-' + 'a'.repeat(20))).toBe(true);
+    });
+
+    it('should reject invalid API key formats', () => {
+      // Too short
+      expect(isValidOpenAIApiKey('sk-short')).toBe(false);
+      
+      // Doesn't start with sk-
+      expect(isValidOpenAIApiKey('pk-1234567890abcdefghij')).toBe(false);
+      expect(isValidOpenAIApiKey('1234567890abcdefghij')).toBe(false);
+      
+      // Empty or null
+      expect(isValidOpenAIApiKey('')).toBe(false);
+      expect(isValidOpenAIApiKey(null as any)).toBe(false);
+      expect(isValidOpenAIApiKey(undefined as any)).toBe(false);
+      
+      // Wrong type
+      expect(isValidOpenAIApiKey(123 as any)).toBe(false);
+    });
+
+    it('should reject keys exactly at boundary (19 chars)', () => {
+      // 'sk-' (3 chars) + 16 chars = 19 total (should be rejected)
+      expect(isValidOpenAIApiKey('sk-' + 'a'.repeat(16))).toBe(false);
+    });
+
+    it('should accept keys at minimum valid length (20 chars)', () => {
+      // 'sk-' (3 chars) + 17 chars = 20 total (should be accepted)
+      expect(isValidOpenAIApiKey('sk-' + 'a'.repeat(17))).toBe(true);
     });
   });
 });

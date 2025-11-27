@@ -3,8 +3,10 @@
  */
 
 import type { AudioFeatures } from './audio';
+import type { Persona } from './persona';
+import type { Language } from './language';
 
-export type AIProvider = 'ollama' | 'bedrock';
+export type AIProvider = 'ollama' | 'bedrock' | 'openai';
 
 export interface PoetryStyle {
   tone: 'melancholic' | 'joyful' | 'energetic' | 'calm' | 'dramatic';
@@ -48,6 +50,18 @@ export interface ProviderConfig {
       secretAccessKey: string;
     };
   };
+  openai?: {
+    apiKey: string;
+    model?: string;
+  };
+}
+
+export interface PoetryGeneratorConfig {
+  persona: Persona;
+  language: Language;
+  provider: 'ollama' | 'openai' | 'bedrock';
+  model?: string;
+  apiKey?: string;
 }
 
 export interface ResourceStatus {

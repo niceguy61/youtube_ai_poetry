@@ -20,7 +20,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             "placeholder:text-muted-foreground",
             // Focus styles with YouTube red ring and smooth transitions
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            "transition-all duration-300 ease-in-out",
+            "transition-all transition-normal",
             "focus-visible:border-primary focus-visible:shadow-[0_0_0_3px_rgba(255,0,0,0.1)]",
             // Disabled state
             "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/50",

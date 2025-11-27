@@ -111,12 +111,11 @@ describe('VisualizationEngine', () => {
       expect(engine.getEnabledLayers()).toEqual(['background-gradient']);
       
       engine.setMode('equalizer');
-      expect(engine.getEnabledLayers()).toContain('background-gradient');
       expect(engine.getEnabledLayers()).toContain('equalizer-bars');
     });
 
     it('should handle all visualization modes', () => {
-      const modes: VisualizationMode[] = ['gradient', 'equalizer', 'spotlight', 'ai-image', 'combined'];
+      const modes: VisualizationMode[] = ['gradient', 'equalizer', 'spotlight', 'combined'];
       
       modes.forEach(mode => {
         expect(() => engine.setMode(mode)).not.toThrow();
@@ -327,7 +326,6 @@ describe('VisualizationEngine', () => {
       engine.setMode('equalizer');
       const layers = engine.getEnabledLayers();
       
-      expect(layers).toContain('background-gradient');
       expect(layers).toContain('equalizer-bars');
     });
 
@@ -335,15 +333,7 @@ describe('VisualizationEngine', () => {
       engine.setMode('spotlight');
       const layers = engine.getEnabledLayers();
       
-      expect(layers).toContain('background-gradient');
       expect(layers).toContain('spotlight-effects');
-    });
-
-    it('should enable correct layers for ai-image mode', () => {
-      engine.setMode('ai-image');
-      const layers = engine.getEnabledLayers();
-      
-      expect(layers).toContain('ai-generated-image');
     });
 
     it('should enable multiple layers for combined mode', () => {

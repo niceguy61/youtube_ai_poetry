@@ -1,110 +1,124 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Loader2, Music } from 'lucide-react';
 
 interface AudioInputProps {
   onUrlSubmit: (url: string) => void;
   isLoading?: boolean;
+  error?: string;
+  success?: boolean;
 }
 
 export const AudioInput: React.FC<AudioInputProps> = ({
   onUrlSubmit,
-  isLoading = false
+  isLoading = false,
+  error,
+  success = false
 }) => {
   const [url, setUrl] = useState('');
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (url.trim()) {
+    if (url.trim() && !isLoading) {
       onUrlSubmit(url.trim());
+      setShowFeedback(true);
+      setTimeout(() => setShowFeedback(false), 3000);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && url.trim()) {
+    if (e.key === 'Enter' && url.trim() && !isLoading) {
       e.preventDefault();
       onUrlSubmit(url.trim());
+      setShowFeedback(true);
+      setTimeout(() => setShowFeedback(false), 3000);
     }
   };
 
   return (
-    <Card className="glass">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-white">Audio Source</CardTitle>
+    <Card className="glass p-6 transition-all hover:shadow-lg hover:shadow-primary/10">
+      <CardHeader className="p-0 mb-4">
+        <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+          <Music className="h-5 w-5 text-primary" />
+          Audio Source
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit}>
+      <CardContent className="p-0">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div className="relative w-full">
-            <input
+            <Input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Paste a YouTube link and press Enter..."
               disabled={isLoading}
-              aria-busy={isLoading}
-              style={{
-                width: '100%',
-                padding: isLoading ? '1rem 3rem 1rem 1.25rem' : '1rem 1.25rem',
-                fontSize: '1.125rem',
-                lineHeight: '1.75rem',
-                backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                borderRadius: '0.75rem',
-                color: '#1a1a1a',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                transition: 'all 0.3s ease-in-out',
-              }}
-              onFocus={(e) => {
-                e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.08)';
-                e.target.style.borderColor = '#FF0000';
-                e.target.style.outline = 'none';
-                e.target.style.boxShadow = '0 0 0 2px rgba(255, 0, 0, 0.5), 0 0 20px rgba(255, 0, 0, 0.3)';
-              }}
-              onBlur={(e) => {
-                e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                e.target.style.borderColor = 'rgba(0, 0, 0, 0.1)';
-                e.target.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-              }}
-              onMouseEnter={(e) => {
-                if (document.activeElement !== e.target) {
-                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.07)';
-                  e.target.style.borderColor = 'rgba(0, 0, 0, 0.15)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (document.activeElement !== e.target) {
-                  e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                  e.target.style.borderColor = 'rgba(0, 0, 0, 0.1)';
-                }
-              }}
+              loading={isLoading}
+              error={!!error}
+              className="text-lg pr-12 transition-all focus:scale-[1.01]"
+              aria-label="YouTube URL input"
+              aria-describedby={error ? "url-error" : undefined}
             />
             {isLoading && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <svg
-                  className="animate-spin h-5 w-5 text-primary"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
+                <Loader2 className="h-5 w-5 text-primary animate-spin" />
               </div>
             )}
           </div>
+
+          {/* Submit button for better accessibility */}
+          <Button
+            type="submit"
+            disabled={!url.trim() || isLoading}
+            className="w-full transition-all hover:scale-[1.02] active:scale-[0.98]"
+            aria-label="Load audio from URL"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Loading Audio...
+              </>
+            ) : (
+              <>
+                <Music />
+                Load Audio
+              </>
+            )}
+          </Button>
+
+          {/* Error feedback */}
+          {error && showFeedback && (
+            <div 
+              id="url-error"
+              className="p-3 bg-destructive/20 border border-destructive/50 rounded-md text-sm text-destructive animate-fade-in"
+              role="alert"
+            >
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Success feedback */}
+          {success && showFeedback && !error && (
+            <div 
+              className="p-3 bg-green-500/20 border border-green-500/50 rounded-md text-sm text-green-400 animate-fade-in"
+              role="status"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Audio loaded successfully!</span>
+              </div>
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>

@@ -332,7 +332,7 @@ describe('StorytellingManager', () => {
         duration: 180,
         poemsGenerated: 5,
         interactionsCount: 10,
-        visualizationMode: 'ai-image',
+        visualizationMode: 'gradient',
         highlights: ['First highlight', 'Second highlight']
       };
 

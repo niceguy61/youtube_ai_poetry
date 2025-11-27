@@ -589,6 +589,311 @@ app.get('/api/youtube/audio-url', async (req, res) => {
 });
 
 /**
+ * Get available Ollama models
+ * Fetches the list of models from the local Ollama instance
+ */
+app.get('/api/ollama/models', async (req, res) => {
+  try {
+    const ollamaEndpoint = process.env.OLLAMA_ENDPOINT || 'http://localhost:11434';
+    console.log(`[Ollama Models] Fetching models from: ${ollamaEndpoint}`);
+
+    // Fetch models from Ollama API
+    const response = await fetch(`${ollamaEndpoint}/api/tags`);
+
+    if (!response.ok) {
+      console.error(`[Ollama Models] Ollama API returned status: ${response.status}`);
+      return res.status(503).json({ 
+        error: 'Ollama service unavailable',
+        message: 'Cannot connect to Ollama. Please ensure Ollama is running.',
+        status: response.status
+      });
+    }
+
+    const data = await response.json();
+
+    // Format the model list
+    const models = (data.models || []).map(model => ({
+      name: model.name,
+      size: model.size,
+      modified: model.modified_at,
+      digest: model.digest
+    }));
+
+    console.log(`[Ollama Models] Found ${models.length} models`);
+    res.json({ 
+      success: true,
+      models 
+    });
+
+  } catch (error) {
+    console.error('[Ollama Models] Error:', error.message);
+    
+    // Check if it's a connection error
+    if (error.code === 'ECONNREFUSED' || error.message.includes('fetch failed')) {
+      return res.status(503).json({ 
+        error: 'Ollama service unavailable',
+        message: 'Cannot connect to Ollama. Please ensure Ollama is running.',
+        details: error.message
+      });
+    }
+
+    res.status(500).json({ 
+      error: 'Failed to fetch Ollama models',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * Generate poetry using AI providers (Ollama or OpenAI)
+ * Supports persona, language, and provider-specific configuration
+ */
+app.post('/api/poetry/generate', async (req, res) => {
+  try {
+    const { 
+      audioFeatures, 
+      persona = 'hamlet', 
+      language = 'ko', 
+      provider = 'ollama', 
+      model = 'gemma3:4b',
+      apiKey 
+    } = req.body;
+
+    if (!audioFeatures) {
+      return res.status(400).json({ 
+        error: 'Audio features are required',
+        message: 'Please provide audio analysis data for poetry generation'
+      });
+    }
+
+    console.log(`[Poetry Generate] Provider: ${provider}, Persona: ${persona}, Language: ${language}, Model: ${model}`);
+
+    // Build the prompt based on audio features, persona, and language
+    const prompt = buildPoetryPrompt(audioFeatures, persona, language);
+
+    let poetry;
+
+    if (provider === 'openai') {
+      // OpenAI provider
+      if (!apiKey) {
+        return res.status(400).json({ 
+          error: 'API key required',
+          message: 'OpenAI API key is required when using OpenAI provider'
+        });
+      }
+
+      poetry = await generateWithOpenAI(prompt, apiKey);
+    } else {
+      // Ollama provider (default)
+      poetry = await generateWithOllama(prompt, model);
+    }
+
+    console.log(`[Poetry Generate] Success - Generated ${poetry.length} characters`);
+    res.json({ 
+      success: true,
+      poetry 
+    });
+
+  } catch (error) {
+    console.error('[Poetry Generate] Error:', error.message);
+
+    // Handle specific error types
+    if (error.statusCode === 401) {
+      return res.status(401).json({ 
+        error: 'Invalid API key',
+        message: 'The provided OpenAI API key is invalid or unauthorized',
+        details: error.message
+      });
+    }
+
+    if (error.statusCode === 503) {
+      return res.status(503).json({ 
+        error: 'Service unavailable',
+        message: error.message,
+        details: error.details
+      });
+    }
+
+    res.status(500).json({ 
+      error: 'Poetry generation failed',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * Build poetry generation prompt based on audio features, persona, and language
+ */
+function buildPoetryPrompt(audioFeatures, persona, language) {
+  const { tempo, energy, mood, spectralCentroid, key } = audioFeatures;
+
+  // Persona characteristics mapping
+  const personaPrompts = {
+    'hamlet': 'in the contemplative, melancholic style of Hamlet, exploring existential themes',
+    'nietzsche': 'in the bold, philosophical style of Nietzsche, challenging conventional wisdom',
+    'yi-sang': 'in the surreal, modernist style of Yi Sang (이상), with fragmented imagery',
+    'baudelaire': 'in the decadent, symbolist style of Baudelaire, exploring beauty and darkness',
+    'rimbaud': 'in the rebellious, visionary style of Rimbaud, with vivid sensory imagery',
+    'kim-soo-young': 'in the socially conscious, modern style of Kim Soo-young (김수영)',
+    'yun-dong-ju': 'in the pure, introspective style of Yun Dong-ju (윤동주), with gentle melancholy',
+    'edgar-allan-poe': 'in the dark, gothic style of Edgar Allan Poe, with haunting atmosphere',
+    'oscar-wilde': 'in the witty, aesthetic style of Oscar Wilde, celebrating beauty and paradox',
+    'kafka': 'in the absurdist, alienated style of Kafka, exploring isolation and bureaucracy',
+    'baek-seok': 'in the pastoral, nostalgic style of Baek Seok (백석), with rural imagery'
+  };
+
+  // Language instructions with explicit requirements
+  const languageInstructions = {
+    'ko': 'You MUST write the poem ONLY in Korean (한국어). Do not use any other language.',
+    'en': 'You MUST write the poem ONLY in English. Do not use any other language.',
+    'ja': 'You MUST write the poem ONLY in Japanese (日本語). Do not use any other language.',
+    'zh': 'You MUST write the poem ONLY in Chinese (中文). Do not use any other language.',
+    'fr': 'You MUST write the poem ONLY in French (Français). Do not use any other language.',
+    'de': 'You MUST write the poem ONLY in German (Deutsch). Do not use any other language.',
+    'es': 'You MUST write the poem ONLY in Spanish (Español). Do not use any other language.'
+  };
+
+  const personaStyle = personaPrompts[persona] || personaPrompts['hamlet'];
+  const languageInstruction = languageInstructions[language] || languageInstructions['ko'];
+
+  return `You are a poetry generator. Your ONLY job is to output poetry text.
+
+Music characteristics:
+- Tempo: ${tempo} BPM
+- Energy: ${energy.toFixed(2)}
+- Mood: ${mood}
+- Key: ${key || 'Unknown'}
+- Brightness: ${spectralCentroid ? spectralCentroid.toFixed(2) : 'N/A'}
+
+ABSOLUTE REQUIREMENTS - FAILURE TO FOLLOW WILL RESULT IN ERROR:
+
+1. ${languageInstruction}
+2. Output ONLY the poem - NO English explanations, NO notes, NO commentary, NO metadata
+3. Do NOT write "Here is a poem" or "Okay, here's" or any introduction
+4. Do NOT include explanations like "Notes on Musical Translation" or "Character Count"
+5. Do NOT ask questions like "Would you like me to"
+6. Do NOT include ANY text that is not part of the poem itself
+7. Style: ${personaStyle}
+8. Length: 2-4 lines (approximately 200-300 characters)
+
+EXAMPLE OF CORRECT OUTPUT (Korean):
+가을 햇살 춤추는 밭, 황금빛 곡식 향기
+어머니의 따스한 손길, 깊은 정겨움
+황리 밭의 노래, 바람에 실려오는
+가을 볕에 녹아내리는 시간
+
+EXAMPLE OF INCORRECT OUTPUT (DO NOT DO THIS):
+"Okay, here's a poem in the style of..."
+"Notes on Musical Translation..."
+"Would you like me to..."
+
+NOW OUTPUT ONLY THE POEM:`;
+}
+
+/**
+ * Generate poetry using Ollama
+ */
+async function generateWithOllama(prompt, model) {
+  const ollamaEndpoint = process.env.OLLAMA_ENDPOINT || 'http://localhost:11434';
+  
+  try {
+    const response = await fetch(`${ollamaEndpoint}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: model,
+        prompt: prompt,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      if (response.status === 503 || response.status === 502) {
+        const error = new Error('Cannot connect to Ollama. Please ensure Ollama is running.');
+        error.statusCode = 503;
+        error.details = `Ollama returned status ${response.status}`;
+        throw error;
+      }
+      throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.response || '';
+
+  } catch (error) {
+    if (error.code === 'ECONNREFUSED' || error.message.includes('fetch failed')) {
+      const serviceError = new Error('Cannot connect to Ollama. Please ensure Ollama is running.');
+      serviceError.statusCode = 503;
+      serviceError.details = error.message;
+      throw serviceError;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Generate poetry using OpenAI
+ */
+async function generateWithOpenAI(prompt, apiKey) {
+  const openaiEndpoint = 'https://api.openai.com/v1/chat/completions';
+  
+  try {
+    const response = await fetch(openaiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a poetic assistant that creates evocative verses inspired by music.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 200,
+        temperature: 0.8
+      })
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        const error = new Error('Invalid or unauthorized OpenAI API key');
+        error.statusCode = 401;
+        throw error;
+      }
+      
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '';
+
+  } catch (error) {
+    if (error.statusCode === 401) {
+      throw error;
+    }
+    
+    if (error.message.includes('fetch failed') || error.code === 'ENOTFOUND') {
+      const serviceError = new Error('Cannot connect to OpenAI API. Please check your internet connection.');
+      serviceError.statusCode = 503;
+      serviceError.details = error.message;
+      throw serviceError;
+    }
+    
+    throw error;
+  }
+}
+
+/**
  * Start server
  */
 app.listen(PORT, () => {

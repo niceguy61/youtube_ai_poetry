@@ -1,0 +1,13 @@
+{
+  "body": "{\"audioFeatures\":{\"tempo\":120,\"energy\":0.75,\"mood\":\"energetic\",\"intensity\":0.8,\"valence\":0.7,\"spectralCentroid\":2500,\"key\":\"C major\"},\"persona\":\"hamlet\",\"language\":\"ko\",\"model\":\"anthropic.claude-3-haiku-20240307-v1:0\"}",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "queryStringParameters": null,
+  "pathParameters": null,
+  "requestContext": {
+    "requestId": "test-request-id",
+    "stage": "test"
+  }
+}

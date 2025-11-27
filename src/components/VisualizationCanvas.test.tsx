@@ -18,7 +18,6 @@ describe('VisualizationCanvas Component', () => {
     expect(screen.getByText('Gradient')).toBeInTheDocument();
     expect(screen.getByText('Equalizer')).toBeInTheDocument();
     expect(screen.getByText('Spotlight')).toBeInTheDocument();
-    expect(screen.getByText('AI Image')).toBeInTheDocument();
     expect(screen.getByText('Combined')).toBeInTheDocument();
   });
 

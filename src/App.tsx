@@ -6,11 +6,17 @@ import {
   PoetryDisplay,
   StorytellingDisplay,
   MusicInfo,
+  AudioMetadataCard,
 } from './components';
+import { SettingsPanel } from './components/SettingsPanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner';
 import { useAudioManager } from './hooks/useAudioManager';
 import { useVisualization } from './hooks/useVisualization';
 import { usePoetryGenerator } from './hooks/usePoetryGenerator';
 import { useStorytellingManager } from './hooks/useStorytellingManager';
+import { useSettingsStore } from './stores/settingsStore';
 import { AudioAnalyzer } from './services/AudioAnalyzer';
 import { VisualizationConfigGenerator } from './services/VisualizationConfigGenerator';
 import { CONFIG } from './config/config';
@@ -67,6 +73,7 @@ function App() {
     poems,
     isGenerating: isGeneratingPoetry,
     generateFromAudio,
+    error: poetryError,
   } = usePoetryGenerator();
 
   // Storytelling management using custom hook
@@ -97,6 +104,9 @@ function App() {
   const interactionCountRef = useRef<number>(0);
   const hasShownIntroRef = useRef<boolean>(false);
 
+  // Settings panel state
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
+
   // Audio analyzer instance
   const audioAnalyzerRef = useRef<AudioAnalyzer | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -104,7 +114,30 @@ function App() {
   // Visualization config generator
   const vizConfigGeneratorRef = useRef<VisualizationConfigGenerator | null>(null);
 
+  // Get loadSettings from settings store
+  // Requirements: 8.2, 8.4 - Initialize settings on app load
+  const { loadSettings } = useSettingsStore();
 
+  // Load settings on app mount
+  // Requirements: 8.2, 8.4 - Initialize settings on app load and handle corrupted settings
+  useEffect(() => {
+    const initializeSettings = async () => {
+      try {
+        console.log('[App] Loading settings from storage...');
+        await loadSettings();
+        console.log('[App] Settings loaded successfully');
+      } catch (error) {
+        console.error('[App] Failed to load settings, using defaults:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load settings';
+        toast.warning('Settings Load Failed', {
+          description: `${errorMessage}. Using default settings.`,
+          duration: 4000,
+        });
+      }
+    };
+
+    initializeSettings();
+  }, [loadSettings]);
 
   // Show introduction on app load
   // Requirement 7.1: Present introductory narrative explaining the experience
@@ -320,11 +353,25 @@ function App() {
             applyVisualizationAIConfig(vizConfig);
           } catch (error) {
             console.error('[App] Failed to generate visualization config:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to generate visualization config';
+            toast.warning('Visualization Config Failed', {
+              description: `${errorMessage}. Using default visualization.`,
+              duration: 4000,
+            });
           }
         }
         
         // Mark content as ready (audio + analysis + poetry + visualization complete)
         setIsContentReady(true);
+        
+        // Store video info
+        if (data.videoInfo) {
+          setVideoInfo({
+            title: data.videoInfo.title,
+            author: data.videoInfo.author,
+            duration: data.videoInfo.duration,
+          });
+        }
         
         // Store thumbnail URL (use proxy to avoid CORS)
         if (data.videoInfo.thumbnail) {
@@ -353,6 +400,11 @@ function App() {
       }
     } catch (error) {
       console.error('[App] URL load error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load audio';
+      toast.error('Audio Load Failed', {
+        description: errorMessage,
+        duration: 5000,
+      });
     }
   }, [loadFromURL, showAnalysisMessage]);
 
@@ -392,7 +444,11 @@ function App() {
           } catch (error) {
             console.error('[App] AudioAnalyzer initialization error:', error);
             console.error('[App] Audio-to-poetry pipeline failed to initialize');
-            // The app will continue but without audio analysis features
+            const errorMessage = error instanceof Error ? error.message : 'Failed to initialize audio analyzer';
+            toast.warning('Audio Analysis Unavailable', {
+              description: `${errorMessage}. Visualization may be limited.`,
+              duration: 4000,
+            });
           }
         } else {
           console.warn('[App] Missing required components for AudioAnalyzer initialization');
@@ -400,6 +456,11 @@ function App() {
       }, 50);
     } catch (error) {
       console.error('[App] Play error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to play audio';
+      toast.error('Playback Error', {
+        description: errorMessage,
+        duration: 5000,
+      });
     }
   }, [play, audioManager, currentSource, showTransition, showAnalysisMessage]);
 
@@ -473,8 +534,57 @@ function App() {
       await generateFromAudio(features);
     } catch (error) {
       console.error('[App] Manual poetry generation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate poetry';
+      toast.error('Poetry Generation Failed', {
+        description: errorMessage,
+        duration: 5000,
+      });
     }
   }, [analysisData, generateFromAudio, showAnalysisMessage]);
+
+  // Handle poetry regeneration
+  // Requirements: 2.1, 2.2, 2.3, 2.5
+  const handlePoetryRegeneration = useCallback(async () => {
+    if (!analysisData) {
+      console.warn('[App] No analysis data available for regeneration');
+      return;
+    }
+
+    try {
+      console.log('[App] Regenerating poetry with current audio data');
+      
+      // Use current audio analysis data for regeneration
+      const features = {
+        tempo: analysisData.tempo,
+        key: analysisData.key,
+        energy: analysisData.energy,
+        valence: analysisData.valence,
+        spectralCentroid: analysisData.spectral_centroid,
+        spectralRolloff: analysisData.spectral_rolloff,
+        zeroCrossingRate: analysisData.zero_crossing_rate,
+        mfcc: analysisData.mfcc_mean,
+        mood: analysisData.mood,
+        intensity: analysisData.intensity,
+        complexity: analysisData.complexity
+      };
+      
+      // Generate new poem using current audio data
+      await generateFromAudio(features);
+      
+      console.log('[App] Poetry regeneration complete');
+      toast.success('Poetry Regenerated', {
+        description: 'A new poem has been generated from your music',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('[App] Poetry regeneration error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to regenerate poetry';
+      toast.error('Regeneration Failed', {
+        description: errorMessage,
+        duration: 5000,
+      });
+    }
+  }, [analysisData, generateFromAudio]);
 
   // Visualization handlers
   const handleVisualizationModeChange = useCallback((mode: VisualizationMode) => {
@@ -493,6 +603,11 @@ function App() {
       initializeVisualization(canvas);
     } catch (error) {
       console.error('[App] Visualization initialization error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize visualization';
+      toast.error('Visualization Error', {
+        description: errorMessage,
+        duration: 5000,
+      });
     }
   }, [initializeVisualization]);
 
@@ -504,9 +619,23 @@ function App() {
   useEffect(() => {
     if (audioError) {
       console.error('[App] Audio error:', audioError);
-      // TODO: Display error to user in UI
+      toast.error('Audio Error', {
+        description: audioError,
+        duration: 5000,
+      });
     }
   }, [audioError]);
+
+  // Display poetry error if present
+  useEffect(() => {
+    if (poetryError) {
+      console.error('[App] Poetry error:', poetryError);
+      toast.error('Poetry Generation Failed', {
+        description: poetryError,
+        duration: 5000,
+      });
+    }
+  }, [poetryError]);
 
   // Show guidance hint when first poem is generated
   // Requirement 7.4: Provide subtle guidance hints during interaction
@@ -541,17 +670,46 @@ function App() {
               Music Poetry Canvas
             </h1>
           </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="#" className="text-white hover:text-white/80 transition-colors text-sm font-medium">
-              Home
-            </a>
-            <a href="#" className="text-white hover:text-white/80 transition-colors text-sm font-medium">
-              About
-            </a>
-            <a href="#" className="text-white hover:text-white/80 transition-colors text-sm font-medium">
-              Gallery
-            </a>
-          </nav>
+          <div className="flex items-center gap-6">
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="#" className="text-white hover:text-white/80 transition-colors text-sm font-medium">
+                Home
+              </a>
+              <a href="#" className="text-white hover:text-white/80 transition-colors text-sm font-medium">
+                About
+              </a>
+              <a href="#" className="text-white hover:text-white/80 transition-colors text-sm font-medium">
+                Gallery
+              </a>
+            </nav>
+            {/* Settings Button */}
+            <button
+              onClick={() => setIsSettingsPanelOpen(true)}
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="Open settings"
+              title="Settings"
+            >
+              <svg 
+                className="w-5 h-5 text-white" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" 
+                />
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
       
@@ -562,7 +720,7 @@ function App() {
       <main className="fixed top-[10vh] left-0 right-0 w-full h-[80vh] overflow-y-auto overflow-x-hidden" style={{ paddingLeft: '30px', paddingRight: '30px' }}>
         <div className="w-full py-4">
         {/* Input Section - Always visible */}
-        <div className="mb-6">
+        <div className="mb-lg">
           <AudioInput
             onUrlSubmit={handleUrlSubmit}
             isLoading={playbackState === 'loading'}
@@ -579,10 +737,10 @@ function App() {
                 <div className="w-24 h-24 border-8 border-purple-200/30 border-t-purple-500 rounded-full animate-spin" />
                 <div className="absolute inset-0 w-24 h-24 border-8 border-transparent border-r-blue-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
               </div>
-              <div className="mt-8 text-center">
-                <h3 className="text-2xl font-bold text-white mb-2">Analyzing your music...</h3>
+              <div className="mt-xl text-center">
+                <h3 className="text-2xl font-bold text-white mb-sm">Analyzing your music...</h3>
                 <p className="text-base text-gray-300">Extracting audio features, generating poetry, and preparing visualization</p>
-                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-400">
+                <div className="mt-md flex items-center justify-center gap-sm text-sm text-gray-400">
                   <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
                   <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
@@ -592,12 +750,12 @@ function App() {
           </div>
         ) : audioUrl && isContentReady ? (
           /* Main Content Grid - Show when ready */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg">
             {/* Left Column - Player (3 columns = 25%) */}
-            <div className="lg:col-span-3 space-y-6">
+            <div className="lg:col-span-3 space-y-lg">
               {/* Audio Player Area */}
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 shadow-xl">
-                <h3 className="text-xl font-bold text-white mb-4 transition-colors hover:text-gray-100">Audio Player</h3>
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-lg shadow-xl">
+                <h3 className="text-xl font-bold text-white mb-md transition-colors hover:text-gray-100">Audio Player</h3>
                 
                 {/* Native HTML5 Audio Player */}
                 <audio
@@ -642,10 +800,16 @@ function App() {
                 }}
               />
               </div>
+
+              {/* Audio Metadata Card */}
+              <AudioMetadataCard 
+                analysis={analysisData}
+                videoInfo={videoInfo}
+              />
             </div>
 
             {/* Center Column - Main Visualization (6 columns = 50%) */}
-            <div className="lg:col-span-6 space-y-6">
+            <div className="lg:col-span-6 space-y-lg">
               <VisualizationCanvas
                 mode={visualizationMode}
                 onModeChange={handleVisualizationModeChange}
@@ -655,11 +819,13 @@ function App() {
             </div>
 
             {/* Right Column - Poetry (3 columns = 25%) */}
-            <div className="lg:col-span-3 space-y-6">
+            <div className="lg:col-span-3 space-y-lg">
               <PoetryDisplay
                 poems={poems}
                 currentPoem={currentPoem || ''}
                 isGenerating={isGeneratingPoetry}
+                onRegenerate={analysisData ? handlePoetryRegeneration : undefined}
+                regenerationError={poetryError}
               />
             </div>
           </div>
@@ -701,6 +867,17 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Settings Panel Modal */}
+      <ErrorBoundary>
+        <SettingsPanel
+          isOpen={isSettingsPanelOpen}
+          onClose={() => setIsSettingsPanelOpen(false)}
+        />
+      </ErrorBoundary>
+      
+      {/* Toast Notifications */}
+      <Toaster />
     </div>
   );
 }

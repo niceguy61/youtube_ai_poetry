@@ -22,7 +22,7 @@ describe('PoetryGenerator', () => {
   };
 
   beforeEach(() => {
-    generator = new PoetryGenerator('ollama');
+    generator = new PoetryGenerator(undefined, 'ollama');
   });
 
   describe('initialization', () => {

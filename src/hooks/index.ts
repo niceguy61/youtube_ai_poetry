@@ -19,3 +19,6 @@ export type { UseCanvasControllerReturn } from './useCanvasController';
 
 export { useStorytellingManager } from './useStorytellingManager';
 export type { UseStorytellingManagerReturn } from './useStorytellingManager';
+
+export { useOllamaModels } from './useOllamaModels';
+export type { UseOllamaModelsReturn, OllamaModel } from './useOllamaModels';

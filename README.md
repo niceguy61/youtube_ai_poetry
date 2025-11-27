@@ -22,10 +22,12 @@ An immersive web application that transforms YouTube music into a multi-sensory 
 - Python librosa for advanced audio feature analysis (tempo, energy, mood, spectral features)
 
 ### 🤖 AI-Generated Poetry
-- Korean poetry generated in the voice of Shakespeare's Hamlet
+- **11 Literary Personas**: Choose from Hamlet, Nietzsche, Yi Sang (이상), Baudelaire, Rimbaud, Kim Soo-young (김수영), Yun Dong-ju (윤동주), Edgar Allan Poe, Oscar Wilde, Kafka, and Baek Seok (백석)
+- **7 Languages**: Generate poetry in Korean, English, Japanese, Chinese, French, German, or Spanish
+- **Dual AI Providers**: Use local Ollama or cloud-based OpenAI
+- **Regenerate Poetry**: Create multiple interpretations of the same music
 - Philosophical reflections inspired by music characteristics
-- Powered by Ollama (local) with ~500 character poems
-- Real-time generation based on audio analysis
+- Real-time generation based on audio analysis (~500 characters)
 
 ### 🎨 Dynamic Visualizations
 - **AI-Configured Parameters**: Visualization settings automatically generated based on music analysis
@@ -34,6 +36,14 @@ An immersive web application that transforms YouTube music into a multi-sensory 
 - **Spotlight Mode**: Animated lights with AI-determined count, speed, and radius
 - **Combined Mode**: Multiple effects layered together
 - YouTube thumbnail backgrounds with gradient overlays
+
+### ⚙️ Customization Settings
+- **Settings Panel**: Centralized UI for all AI configuration options
+- **Persona Selection**: Choose your preferred literary voice for poetry
+- **Language Selection**: Generate poetry in your preferred language
+- **AI Provider**: Switch between Ollama (local) and OpenAI (cloud)
+- **Model Selection**: Choose from available Ollama models
+- **Persistent Settings**: Your preferences are saved across sessions
 
 ### 🎭 Storytelling Experience
 - Contextual messages during audio analysis
@@ -60,15 +70,24 @@ An immersive web application that transforms YouTube music into a multi-sensory 
 - **Testing**: Vitest + fast-check (property-based testing with 100+ iterations)
 
 ### Backend
-- **Runtime**: Node.js with Express
+- **Production**: AWS Lambda + API Gateway (serverless)
+  - Poetry Function: Node.js 20.x with AWS Bedrock
+  - YouTube Function: Python 3.11 with yt-dlp + librosa
+  - Deployed via AWS SAM (Serverless Application Model)
+- **Development**: Node.js with Express (local testing)
 - **Audio Extraction**: yt-dlp (YouTube audio download)
 - **Audio Analysis**: Python librosa (tempo, key, energy, mood, spectral features)
-- **CORS**: Configured for local development
+- **CORS**: Configured for both local and production
 
 ### AI Integration
-- **Development**: Ollama (local, RTX 3060 compatible)
-  - Model: gemma3:4b
+- **Local AI**: Ollama (RTX 3060 compatible)
+  - Default Model: gemma3:4b
   - Endpoint: http://localhost:11434
+  - Supports multiple models (selectable in settings)
+- **Cloud AI**: OpenAI API
+  - GPT-4, GPT-3.5-turbo, and other models
+  - Secure API key storage with encryption
+  - Configurable in settings panel
 - **Production**: AWS Bedrock (Claude models) - ready for deployment
 - **Fallback**: Template-based poetry generation
 
@@ -95,12 +114,19 @@ src/
 
 ### Prerequisites
 
+#### For Local Development
 - **Node.js 18+** and npm
 - **Python 3.8+** with pip (for audio analysis)
 - **yt-dlp** (for YouTube audio extraction)
 - **Ollama** (for local AI poetry generation)
   - Install from: https://ollama.com/download
   - Pull model: `ollama pull gemma3:4b`
+
+#### For Production Deployment (AWS Lambda)
+- **AWS Account** with Bedrock access
+- **AWS SAM CLI** installed
+- **Docker Desktop** (for local Lambda testing)
+- **AWS CLI** configured with credentials
 
 ### Installation
 
@@ -149,6 +175,8 @@ src/
 
 ### Running the Application
 
+#### Local Development
+
 1. **Start the backend server** (in `backend/` directory)
    ```bash
    npm start
@@ -163,7 +191,36 @@ src/
 
 3. **Open your browser** and navigate to http://localhost:5173
 
-4. **Paste a YouTube URL** and press Enter to start the experience!
+4. **Configure AI Settings** (optional)
+   - Click the settings icon in the header
+   - Choose your preferred persona and language
+   - Select AI provider (Ollama or OpenAI)
+   - If using OpenAI, enter your API key
+
+5. **Paste a YouTube URL** and press Enter to start the experience!
+
+#### Production Deployment (AWS Lambda)
+
+See [Lambda Deployment Guide](lambda/README.md) for detailed instructions.
+
+**Quick Start:**
+```bash
+cd lambda
+sam build
+sam deploy --guided
+```
+
+**Update Frontend:**
+```bash
+# Update .env.production with your API Gateway URL
+VITE_API_ENDPOINT=https://your-api-id.execute-api.region.amazonaws.com/Prod
+```
+
+**Deploy Frontend:**
+```bash
+npm run build
+# Deploy dist/ folder to your hosting service (Vercel, Netlify, S3, etc.)
+```
 
 ### Testing
 
@@ -197,6 +254,22 @@ npm run preview
 
 ### AI Configuration
 
+#### In-App Settings Panel
+Access the settings panel by clicking the settings icon in the header. Configure:
+
+**Persona Selection** (Default: Hamlet)
+- Choose from 11 literary personas
+- Each persona brings unique voice and style
+- Available: Hamlet, Nietzsche, Yi Sang, Baudelaire, Rimbaud, Kim Soo-young, Yun Dong-ju, Edgar Allan Poe, Oscar Wilde, Kafka, Baek Seok
+
+**Language Selection** (Default: Korean)
+- Generate poetry in 7 languages
+- Available: Korean (한국어), English, Japanese (日本語), Chinese (中文), French (Français), German (Deutsch), Spanish (Español)
+
+**AI Provider Selection**
+- **Ollama (Local)**: Free, private, requires local setup
+- **OpenAI (Cloud)**: Requires API key, no local resources needed
+
 #### Ollama (Local Development)
 ```env
 AI_PROVIDER=ollama
@@ -204,8 +277,31 @@ OLLAMA_ENDPOINT=http://localhost:11434
 OLLAMA_MODEL=gemma3:4b
 ```
 - **Requirements**: RTX 3060 or better with 12GB+ VRAM
-- **Poetry length**: ~500 characters in Korean
+- **Model Selection**: Choose from installed models in settings
+- **Poetry length**: ~500 characters
 - **Temperature**: 0.7 for creative output
+- **Setup**: Install Ollama and pull models (e.g., `ollama pull gemma3:4b`)
+
+#### OpenAI (Cloud)
+**Setup Instructions:**
+1. Get an API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Open the settings panel in the app
+3. Select "OpenAI" as the AI provider
+4. Enter your API key in the secure input field
+5. Click "Save" to store (encrypted in browser localStorage)
+
+**Security:**
+- API keys are encrypted before storage
+- Keys are never logged or exposed
+- Stored locally in your browser only
+
+**Models:**
+- GPT-4, GPT-3.5-turbo, and other OpenAI models
+- Model selection available in settings
+
+**Pricing:**
+- Pay-per-use based on OpenAI pricing
+- Typical poetry generation: ~$0.001-0.01 per request
 
 #### AWS Bedrock (Production Ready)
 ```env
@@ -253,15 +349,17 @@ music-poetry-canvas/
 
 ## 🎯 How It Works
 
-1. **Paste YouTube URL**: Enter any YouTube music URL
-2. **Audio Analysis**: Backend downloads audio and analyzes with librosa
+1. **Configure Settings** (optional): Choose persona, language, and AI provider
+2. **Paste YouTube URL**: Enter any YouTube music URL
+3. **Audio Analysis**: Backend downloads audio and analyzes with librosa
    - Extracts: tempo, key, energy, valence, mood, spectral features
-3. **AI Poetry Generation**: Ollama generates Korean poetry in Hamlet's voice
+4. **AI Poetry Generation**: AI generates poetry in your selected persona's voice and language
    - Philosophical reflections based on music characteristics
-4. **Visualization Configuration**: AI generates visualization parameters
+   - Uses Ollama (local) or OpenAI (cloud) based on your settings
+5. **Visualization Configuration**: AI generates visualization parameters
    - Colors, speeds, counts based on music mood and energy
-5. **Real-time Rendering**: Web Audio API + Canvas for 60 FPS visualization
-6. **Interactive Experience**: Play, pause, switch visualization modes
+6. **Real-time Rendering**: Web Audio API + Canvas for 60 FPS visualization
+7. **Interactive Experience**: Play, pause, switch visualization modes, regenerate poetry
 
 ## 🏗️ System Architecture
 
@@ -343,6 +441,14 @@ graph LR
 
 All parameters (colors, speeds, counts) are dynamically generated by AI based on the music's characteristics!
 
+## 🔄 Poetry Regeneration
+
+Don't like the first poem? Click the **Regenerate** button to create a new interpretation:
+- Uses the same audio analysis data
+- Generates fresh poetry with your selected persona and language
+- Maintains poem history for comparison
+- Instant regeneration with loading indicator
+
 ## 🧪 Testing
 
 ```bash
@@ -355,6 +461,48 @@ npm run test:coverage # Generate coverage report
 **Property-based testing** with fast-check ensures robustness:
 - 100+ iterations per property test
 - Validates duration boundaries, audio features, visualization parameters
+
+## 🔧 Troubleshooting
+
+### Ollama Issues
+- **"Cannot connect to Ollama"**: Ensure Ollama is running (`ollama serve`)
+- **No models available**: Pull a model first (`ollama pull gemma3:4b`)
+- **Slow generation**: Check GPU availability and model size
+
+### OpenAI Issues
+- **"Invalid API key"**: Verify key format starts with `sk-`
+- **"Authentication failed"**: Check key is active on OpenAI dashboard
+- **Rate limits**: OpenAI has usage limits; check your account status
+
+### Settings Not Saving
+- **Check browser localStorage**: Ensure it's not disabled
+- **Clear cache**: Try clearing browser cache and reconfiguring
+- **Incognito mode**: Settings won't persist in private browsing
+
+### Poetry Generation Fails
+- **Check AI provider**: Ensure selected provider is available
+- **Fallback to templates**: App uses templates if AI fails
+- **Network issues**: OpenAI requires internet connection
+
+### AWS Lambda / Serverless Issues
+
+#### Deployment Errors
+- **"Bedrock Access Denied"**: Ensure IAM role has `bedrock:InvokeModel` permission
+- **"Layer build failed"**: Use Linux/macOS or CI/CD for layer builds (Windows has compatibility issues)
+- **"Stack already exists"**: Use `sam deploy` without `--guided` for updates
+
+#### Runtime Errors
+- **CORS errors**: Check API Gateway CORS configuration in `template.yaml`
+- **Timeout errors**: Increase timeout in `template.yaml` (max 15 minutes)
+- **Memory errors**: Increase memory allocation for the function
+- **Cold start latency**: First request may take 1-3 seconds; consider provisioned concurrency
+
+#### Cost Monitoring
+- **Unexpected charges**: Set up CloudWatch billing alarms
+- **High invocation count**: Check for retry loops or excessive polling
+- **Bedrock costs**: Monitor token usage in CloudWatch Logs
+
+See [Lambda README](lambda/README.md) for detailed troubleshooting.
 
 ## 📚 Documentation
 

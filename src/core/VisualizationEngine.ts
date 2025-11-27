@@ -18,7 +18,6 @@ import { CONFIG } from '../config/config';
 import { GradientVisualization } from './visualizations/GradientVisualization';
 import { EqualizerVisualization } from './visualizations/EqualizerVisualization';
 import { SpotlightVisualization } from './visualizations/SpotlightVisualization';
-import { AIImageVisualization } from './visualizations/AIImageVisualization';
 
 export class VisualizationEngine {
   private canvas: HTMLCanvasElement | null = null;
@@ -50,7 +49,6 @@ export class VisualizationEngine {
   private gradientVisualization: GradientVisualization | null = null;
   private equalizerVisualization: EqualizerVisualization | null = null;
   private spotlightVisualization: SpotlightVisualization | null = null;
-  private aiImageVisualization: AIImageVisualization | null = null;
   
   // Background image
   private backgroundImage: HTMLImageElement | null = null;
@@ -96,10 +94,6 @@ export class VisualizationEngine {
     this.spotlightVisualization = new SpotlightVisualization();
     this.spotlightVisualization.initialize(canvas, context);
     this.spotlightVisualization.setColorScheme(this.config.colors);
-    
-    this.aiImageVisualization = new AIImageVisualization();
-    this.aiImageVisualization.initialize(canvas, context);
-    this.aiImageVisualization.setColorScheme(this.config.colors);
     
     this.initialized = true;
   }
@@ -181,9 +175,6 @@ export class VisualizationEngine {
       }
       if (this.spotlightVisualization) {
         this.spotlightVisualization.setColorScheme(config.colors);
-      }
-      if (this.aiImageVisualization) {
-        this.aiImageVisualization.setColorScheme(config.colors);
       }
     }
     
@@ -364,10 +355,6 @@ export class VisualizationEngine {
       this.spotlightVisualization.cleanup();
       this.spotlightVisualization = null;
     }
-    if (this.aiImageVisualization) {
-      this.aiImageVisualization.cleanup();
-      this.aiImageVisualization = null;
-    }
     
     this.canvas = null;
     this.ctx = null;
@@ -473,9 +460,6 @@ export class VisualizationEngine {
       case 'spotlight-effects':
         this.renderSpotlightEffects(audioData, timestamp);
         break;
-      case 'ai-generated-image':
-        this.renderAIImage(audioData, timestamp);
-        break;
       case 'particles':
         this.renderParticles(audioData, timestamp);
         break;
@@ -509,15 +493,6 @@ export class VisualizationEngine {
     }
   }
 
-  private renderAIImage(audioData: AudioData, timestamp: number): void {
-    if (!this.ctx || !this.canvas) return;
-    
-    // Use the AIImageVisualization instance for AI-generated image rendering
-    if (this.aiImageVisualization) {
-      this.aiImageVisualization.render(audioData, timestamp);
-    }
-  }
-
   private renderParticles(audioData: AudioData, timestamp: number): void {
     // Placeholder for particle rendering
     // Future enhancement
@@ -540,8 +515,6 @@ export class VisualizationEngine {
         return ['equalizer-bars'];
       case 'spotlight':
         return ['spotlight-effects'];
-      case 'ai-image':
-        return ['ai-generated-image'];
       case 'combined':
         return [
           'background-gradient',

@@ -108,6 +108,13 @@ export class OllamaProvider extends AIProviderService {
       }
 
       const data: OllamaGenerateResponse = await response.json();
+      
+      // Handle empty response (common with thinking models that hit token limit)
+      if (!data.response || data.response.trim() === '') {
+        console.warn('[OllamaProvider] Empty response received, model may have hit token limit during thinking phase');
+        throw new Error('Model returned empty response. Try increasing maxTokens or using a different model.');
+      }
+      
       return data.response;
     } catch (error) {
       console.error('[OllamaProvider] Generation failed:', error);
@@ -154,6 +161,7 @@ export class OllamaProvider extends AIProviderService {
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let hasReceivedContent = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -171,6 +179,7 @@ export class OllamaProvider extends AIProviderService {
             try {
               const data: OllamaGenerateResponse = JSON.parse(line);
               if (data.response) {
+                hasReceivedContent = true;
                 callback(data.response);
               }
             } catch (e) {
@@ -178,6 +187,12 @@ export class OllamaProvider extends AIProviderService {
             }
           }
         }
+      }
+      
+      // Check if we received any content
+      if (!hasReceivedContent) {
+        console.warn('[OllamaProvider] No content received in stream, model may have hit token limit during thinking phase');
+        throw new Error('Model returned empty response. Try increasing maxTokens or using a different model.');
       }
     } catch (error) {
       console.error('[OllamaProvider] Streaming generation failed:', error);

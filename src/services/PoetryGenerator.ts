@@ -10,11 +10,18 @@ import type {
   PoetryStyle,
   GenerationOptions,
   Poem,
+  PoetryGeneratorConfig,
+  ProviderConfig,
 } from '../types/poetry';
+import type { Persona } from '../types/persona';
+import type { Language } from '../types/language';
 import { AIProviderService } from './AIProviderService';
 import { createAIProvider, getDefaultGenerationOptions } from './AIProviderFactory';
 import { TemplateFallbackProvider } from './TemplateFallbackProvider';
 import { CONFIG } from '../config/config';
+import { getPersona } from '../config/personas';
+import { getLanguage } from '../config/languages';
+import { getPersonaTemplate } from '../config/personaTemplates';
 
 /**
  * Poetry Generator class
@@ -25,9 +32,33 @@ export class PoetryGenerator {
   private fallbackProvider: TemplateFallbackProvider;
   private currentStyle: PoetryStyle;
   private generatedPoems: Poem[] = [];
+  private config: PoetryGeneratorConfig;
 
-  constructor(provider?: AIProvider) {
-    this.provider = createAIProvider(provider);
+  constructor(config?: PoetryGeneratorConfig, provider?: AIProvider) {
+    // Use provided config or defaults
+    this.config = config || this.getDefaultConfig();
+    
+    // Initialize provider based on config
+    const providerType = config?.provider || provider || 'ollama';
+    
+    // Build provider config from PoetryGeneratorConfig
+    const providerConfig: ProviderConfig = {
+      ollama: {
+        endpoint: CONFIG.ai.OLLAMA_ENDPOINT,
+        model: this.config.model || CONFIG.ai.OLLAMA_MODEL,
+      },
+      bedrock: {
+        region: CONFIG.ai.BEDROCK_REGION,
+        modelId: CONFIG.ai.BEDROCK_MODEL_ID,
+      },
+      openai: {
+        apiKey: this.config.apiKey || '',
+        model: this.config.model,
+      },
+    };
+    
+    this.provider = createAIProvider(providerType as AIProvider, providerConfig);
+    
     this.fallbackProvider = new TemplateFallbackProvider();
     this.currentStyle = this.getDefaultStyle();
   }
@@ -185,72 +216,138 @@ export class PoetryGenerator {
     this.generatedPoems = [];
   }
 
+  /**
+   * Update the poetry generator configuration
+   * Requirements: 1.2, 1.3, 4.3, 5.4, 6.2, 6.3
+   */
+  updateConfig(config: Partial<PoetryGeneratorConfig>): void {
+    this.config = { ...this.config, ...config };
+    
+    // If provider, model, or apiKey changed, update the provider instance
+    if (config.provider || config.model || config.apiKey) {
+      const providerType = this.config.provider;
+      
+      // Build provider config from updated PoetryGeneratorConfig
+      const providerConfig: ProviderConfig = {
+        ollama: {
+          endpoint: CONFIG.ai.OLLAMA_ENDPOINT,
+          model: this.config.model || CONFIG.ai.OLLAMA_MODEL,
+        },
+        bedrock: {
+          region: CONFIG.ai.BEDROCK_REGION,
+          modelId: CONFIG.ai.BEDROCK_MODEL_ID,
+        },
+        openai: {
+          apiKey: this.config.apiKey || '',
+          model: this.config.model,
+        },
+      };
+      
+      this.provider = createAIProvider(providerType as AIProvider, providerConfig);
+    }
+  }
+
+  /**
+   * Get the current configuration
+   */
+  getConfig(): PoetryGeneratorConfig {
+    return { ...this.config };
+  }
+
   // ============================================================================
   // Private Methods
   // ============================================================================
 
   /**
-   * Build a prompt from audio features
+   * Build a prompt from audio features using persona-specific template
    */
   private buildAudioPrompt(features: AudioFeatures): string {
+    // Get persona and language from config
+    const language = getLanguage(this.config.language);
+    
+    // Get persona-specific template
+    const template = getPersonaTemplate(this.config.persona, language.nativeName);
+    
     // Use librosa mood if available, otherwise infer from features
     const mood = features.mood || this.inferMood(features);
-    const intensity = features.intensity !== undefined 
-      ? this.getIntensityDescription(features.intensity)
-      : this.getIntensityDescription(features.energy);
+    
+    // Get intensity description (prioritize features.intensity over energy)
+    const intensityValue = features.intensity !== undefined ? features.intensity : features.energy;
+    const intensityDesc = this.getIntensityDescription(intensityValue);
+    
     const pace = this.getPaceDescription(features.tempo);
+    const energyDesc = this.getEnergyDescription(features.energy);
 
-    // Build enhanced prompt with librosa analysis in Korean with Hamlet persona
-    let prompt = `당신은 셰익스피어의 햄릿입니다. 이 음악을 듣고 깊은 사색에 잠겨 시를 짓습니다.
-
-음악의 특징:
-- 템포: ${features.tempo.toFixed(0)} BPM (${pace})`;
+    // Build prompt with template and music characteristics
+    let prompt = template;
+    
+    prompt += `\n\nMusic characteristics:
+- Tempo: ${features.tempo.toFixed(0)} BPM (${pace})`;
 
     // Add key if available (from librosa)
     if (features.key) {
-      prompt += `\n- 음악 키: ${features.key}`;
+      prompt += `\n- Key: ${features.key}`;
     }
 
-    prompt += `\n- 에너지: ${features.energy.toFixed(2)} (${intensity})
-- 분위기: ${mood}
-- 감정 톤: ${features.valence > 0.5 ? '긍정적' : '사색적'}`;
+    // Emphasize intensity if it differs significantly from energy
+    if (features.intensity !== undefined && Math.abs(features.intensity - features.energy) > 0.3) {
+      prompt += `\n- Intensity: ${(intensityValue * 100).toFixed(0)}% (${intensityDesc}) - THIS IS THE DOMINANT CHARACTERISTIC`;
+      prompt += `\n- Energy level: ${features.energy.toFixed(2)} (${energyDesc})`;
+    } else {
+      prompt += `\n- Energy/Intensity: ${features.energy.toFixed(2)} (${energyDesc})`;
+    }
+
+    // Strongly emphasize the mood from librosa analysis
+    prompt += `\n- PRIMARY MOOD: ${mood.toUpperCase()} - This should be the dominant feeling in the poem`;
+    prompt += `\n- Emotional tone: ${features.valence > 0.5 ? 'positive' : 'contemplative'}`;
 
     // Add complexity if available (from librosa)
     if (features.complexity !== undefined) {
-      const complexityDesc = features.complexity > 0.7 ? '복잡하고 다층적' :
-                            features.complexity > 0.4 ? '적당히 복잡함' :
-                            '단순하고 직접적';
-      prompt += `\n- 음악 복잡도: ${complexityDesc}`;
+      const complexityDesc = features.complexity > 0.7 ? 'complex and layered' :
+                            features.complexity > 0.4 ? 'moderately complex' :
+                            'simple and direct';
+      prompt += `\n- Musical complexity: ${complexityDesc}`;
     }
 
-    prompt += `\n\n햄릿의 관점에서 이 음악이 불러일으키는 실존적 고뇌, 삶과 죽음에 대한 성찰, 그리고 인간 존재의 의미를 담아 한글로 약 500자 분량의 시를 지어주세요.
-"존재할 것인가, 존재하지 않을 것인가"의 철학적 깊이를 담되, 이 음악의 특성을 반영하세요.
-감각적 이미지와 감정적 울림에 집중하고, 충분한 길이로 깊이 있게 표현하세요.`;
+    // Add length instruction based on style
+    const lengthInstruction = this.getLengthInstructionForPrompt();
+    
+    prompt += `\n\nIMPORTANT REQUIREMENTS:
+1. The poem MUST reflect the PRIMARY MOOD (${mood}) and intensity level (${intensityDesc})
+2. ${lengthInstruction}
+3. Follow the template format strictly
+4. Output ONLY the poem in Korean, nothing else (no titles, no explanations)`;
 
     return prompt;
   }
 
   /**
-   * Build a prompt from mood
+   * Build a prompt from mood using persona-specific template
    */
   private buildMoodPrompt(mood: string): string {
-    const styleInstructions = this.getStyleInstructions();
+    const language = getLanguage(this.config.language);
+    
+    // Get persona-specific template
+    const template = getPersonaTemplate(this.config.persona, language.nativeName);
 
-    return `Generate a ${styleInstructions} that evokes a ${mood} mood.
+    return `${template}
 
-Create vivid imagery and emotional depth.
-${this.getLengthInstruction()}
-Let the words flow naturally with the feeling.`;
+Mood to evoke: ${mood}
+
+Follow the template format strictly. Output ONLY the poem, nothing else.`;
   }
 
   /**
-   * Build a prompt from interaction data
+   * Build a prompt from interaction data using persona-specific template
    */
   private buildInteractionPrompt(
     interaction: InteractionData,
     audioFeatures?: AudioFeatures
   ): string {
-    const styleInstructions = this.getStyleInstructions();
+    const language = getLanguage(this.config.language);
+    
+    // Get persona-specific template
+    const template = getPersonaTemplate(this.config.persona, language.nativeName);
     
     let contextInfo = '';
     if (audioFeatures) {
@@ -260,11 +357,11 @@ Let the words flow naturally with the feeling.`;
 
     const interactionType = interaction.dragPath.length > 0 ? 'flowing gesture' : 'decisive touch';
     
-    return `Generate a ${styleInstructions} inspired by a user's ${interactionType} on the canvas.${contextInfo}
+    return `${template}
 
-The interaction suggests movement and intention.
-${this.getLengthInstruction()}
-Capture the feeling of creative expression and connection.`;
+User interaction: ${interactionType} on the canvas${contextInfo}
+
+Follow the template format strictly. Output ONLY the poem, nothing else.`;
   }
 
   /**
@@ -313,6 +410,21 @@ Capture the feeling of creative expression and connection.`;
   }
 
   /**
+   * Get length instruction for prompt (more specific for Korean)
+   */
+  private getLengthInstructionForPrompt(): string {
+    switch (this.currentStyle.length) {
+      case 'short':
+        return 'Write approximately 150-200 characters in Korean (about 4-6 lines)';
+      case 'long':
+        return 'Write approximately 450-550 characters in Korean (about 12-16 lines). This should be a substantial poem with rich imagery and depth';
+      case 'medium':
+      default:
+        return 'Write approximately 300-400 characters in Korean (about 8-10 lines)';
+    }
+  }
+
+  /**
    * Get generation options based on current style
    */
   private getGenerationOptions(): GenerationOptions {
@@ -326,12 +438,15 @@ Capture the feeling of creative expression and connection.`;
       temperature = 0.6; // More focused
     }
 
-    // Adjust max tokens based on length (increased for 500 character poems)
+    // Adjust max tokens based on length
+    // Note: Qwen3 uses thinking mode which consumes tokens, so we need higher limits
     let maxTokens = baseOptions.maxTokens;
     if (this.currentStyle.length === 'short') {
-      maxTokens = 150;
+      maxTokens = 300; // Increased for thinking models
     } else if (this.currentStyle.length === 'long') {
-      maxTokens = 800; // Increased for ~500 character Korean poems
+      maxTokens = 1500; // Increased for thinking models + ~500 character Korean poems
+    } else {
+      maxTokens = 800; // Medium length
     }
 
     return {
@@ -394,36 +509,69 @@ Capture the feeling of creative expression and connection.`;
 
   /**
    * Infer mood from audio features
+   * Considers intensity, energy, valence, and tempo
    */
   private inferMood(features: AudioFeatures): string {
-    const { energy, valence, tempo } = features;
+    const { energy, valence, tempo, intensity } = features;
+    
+    // Use intensity if available, otherwise fall back to energy
+    const powerLevel = intensity !== undefined ? intensity : energy;
 
-    if (energy > 0.7 && valence > 0.6) {
-      return 'joyful and energetic';
-    } else if (energy > 0.7 && valence < 0.4) {
-      return 'intense and dramatic';
-    } else if (energy < 0.3 && valence < 0.4) {
-      return 'melancholic and contemplative';
-    } else if (energy < 0.3 && valence > 0.6) {
-      return 'calm and peaceful';
-    } else if (tempo > 140) {
+    // High intensity/power scenarios
+    if (powerLevel > 0.7) {
+      if (valence > 0.6) {
+        return 'joyful and energetic';
+      } else if (valence < 0.4) {
+        return 'intense and dramatic';
+      } else {
+        return 'powerful and driving';
+      }
+    }
+    
+    // Low intensity/power scenarios
+    if (powerLevel < 0.3) {
+      if (valence < 0.4) {
+        return 'melancholic and contemplative';
+      } else if (valence > 0.6) {
+        return 'calm and peaceful';
+      } else {
+        return 'gentle and introspective';
+      }
+    }
+    
+    // Tempo-based moods for moderate intensity
+    if (tempo > 140) {
       return 'fast-paced and exciting';
     } else if (tempo < 80) {
       return 'slow and reflective';
-    } else {
-      return 'balanced and flowing';
     }
+    
+    // Default moderate mood
+    return 'balanced and flowing';
   }
 
   /**
-   * Get intensity description from energy level
+   * Get intensity description from intensity/energy level
+   * Used for overall musical intensity (how powerful/forceful the music feels)
    */
-  private getIntensityDescription(energy: number): string {
-    if (energy > 0.8) return 'very intense';
-    if (energy > 0.6) return 'energetic';
-    if (energy > 0.4) return 'moderate';
-    if (energy > 0.2) return 'gentle';
-    return 'very soft';
+  private getIntensityDescription(intensity: number): string {
+    if (intensity > 0.8) return 'very intense and powerful';
+    if (intensity > 0.6) return 'strong and forceful';
+    if (intensity > 0.4) return 'moderate intensity';
+    if (intensity > 0.2) return 'gentle and subdued';
+    return 'very soft and delicate';
+  }
+
+  /**
+   * Get energy description from energy level
+   * Used for musical energy (how active/dynamic the music is)
+   */
+  private getEnergyDescription(energy: number): string {
+    if (energy > 0.8) return 'highly energetic and dynamic';
+    if (energy > 0.6) return 'energetic and lively';
+    if (energy > 0.4) return 'moderately active';
+    if (energy > 0.2) return 'calm and steady';
+    return 'very calm and still';
   }
 
   /**
@@ -445,6 +593,18 @@ Capture the feeling of creative expression and connection.`;
       tone: 'calm',
       length: 'long', // Changed to long for ~500 character poems
       structure: 'free-verse',
+    };
+  }
+
+  /**
+   * Get default poetry generator configuration
+   */
+  private getDefaultConfig(): PoetryGeneratorConfig {
+    return {
+      persona: 'hamlet',
+      language: 'ko',
+      provider: 'ollama',
+      model: 'gemma3:4b',
     };
   }
 

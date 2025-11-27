@@ -1,0 +1,339 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Music Poetry Canvas Backend - Serverless API
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowOrigin: "'*'"
+
+Resources:
+  # ============================================================================
+  # Poetry Generation Function (Node.js + Bedrock)
+  # ============================================================================
+  PoetryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: poetry-function/
+      Handler: index.handler
+      Runtime: nodejs20.x
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          AWS_BEDROCK_REGION: !Ref AWS::Region
+      Policies:
+        - Statement:
+          - Effect: Allow
+            Action:
+              - bedrock:InvokeModel
+            Resource: 
+              - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0'
+              - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0'
+      Events:
+        PoetryGenerate:
+          Type: Api
+          Properties:
+            Path: /api/poetry/generate
+            Method: post
+
+  # ============================================================================
+  # YouTube Processing Function (Python + yt-dlp + librosa)
+  # ============================================================================
+  YouTubeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: youtube-function/
+      Handler: handler.lambda_handler
+      Runtime: python3.11
+      MemorySize: 2048
+      Timeout: 60
+      Layers:
+        - !Ref YtdlpLayer
+        - !Ref PythonLibsLayer
+      Environment:
+        Variables:
+          PYTHONPATH: /opt/python
+      Events:
+        YouTubeInfo:
+          Type: Api
+          Properties:
+            Path: /api/youtube/info
+            Method: get
+        YouTubeAudioWithAnalysis:
+          Type: Api
+          Properties:
+            Path: /api/youtube/audio-with-analysis
+            Method: get
+
+  # ============================================================================
+  # Thumbnail Proxy Function (Node.js)
+  # ============================================================================
+  ThumbnailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: thumbnail-function/
+      Handler: index.handler
+      Runtime: nodejs20.x
+      MemorySize: 256
+      Timeout: 10
+      Events:
+        ThumbnailProxy:
+          Type: Api
+          Properties:
+            Path: /api/thumbnail
+            Method: get
+
+  # ============================================================================
+  # Lambda Layers
+  # ============================================================================
+  
+  YtdlpLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: yt-dlp-layer
+      Description: yt-dlp binary for YouTube audio extraction
+      ContentUri: layers/yt-dlp-layer/
+      CompatibleRuntimes:
+        - python3.11
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: makefile
+
+  PythonLibsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: python-libs-layer
+      Description: Python libraries for audio analysis (librosa, numpy, scipy)
+      ContentUri: layers/python-libs-layer/
+      CompatibleRuntimes:
+        - python3.11
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: python3.11
+
+  # ============================================================================
+  # SNS Topic for Alarm Notifications
+  # ============================================================================
+  AlarmNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: music-poetry-backend-alarms
+      DisplayName: Music Poetry Backend Alarms
+      Subscription:
+        - Endpoint: !Ref AlarmEmail
+          Protocol: email
+
+  # ============================================================================
+  # CloudWatch Alarms - Poetry Function
+  # ============================================================================
+  
+  PoetryFunctionErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-PoetryFunction-Errors"
+      AlarmDescription: "Alert when Poetry Function error rate exceeds 5%"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PoetryFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  PoetryFunctionDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-PoetryFunction-Duration"
+      AlarmDescription: "Alert when Poetry Function duration exceeds 80% of timeout (24s)"
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 2
+      Threshold: 24000  # 24 seconds in milliseconds (80% of 30s timeout)
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PoetryFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  PoetryFunctionThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-PoetryFunction-Throttles"
+      AlarmDescription: "Alert when Poetry Function is throttled"
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PoetryFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  # ============================================================================
+  # CloudWatch Alarms - YouTube Function
+  # ============================================================================
+  
+  YouTubeFunctionErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-YouTubeFunction-Errors"
+      AlarmDescription: "Alert when YouTube Function error rate exceeds 5%"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref YouTubeFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  YouTubeFunctionDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-YouTubeFunction-Duration"
+      AlarmDescription: "Alert when YouTube Function duration exceeds 80% of timeout (48s)"
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 2
+      Threshold: 48000  # 48 seconds in milliseconds (80% of 60s timeout)
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref YouTubeFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  YouTubeFunctionThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-YouTubeFunction-Throttles"
+      AlarmDescription: "Alert when YouTube Function is throttled"
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref YouTubeFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  # ============================================================================
+  # CloudWatch Alarms - Thumbnail Function
+  # ============================================================================
+  
+  ThumbnailFunctionErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Errors"
+      AlarmDescription: "Alert when Thumbnail Function error rate exceeds 5%"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ThumbnailFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  ThumbnailFunctionDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Duration"
+      AlarmDescription: "Alert when Thumbnail Function duration exceeds 80% of timeout (8s)"
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 2
+      Threshold: 8000  # 8 seconds in milliseconds (80% of 10s timeout)
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ThumbnailFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+  ThumbnailFunctionThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ThumbnailFunction-Throttles"
+      AlarmDescription: "Alert when Thumbnail Function is throttled"
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300  # 5 minutes
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ThumbnailFunction
+      AlarmActions:
+        - !Ref AlarmNotificationTopic
+      TreatMissingData: notBreaching
+
+Parameters:
+  AlarmEmail:
+    Type: String
+    Description: Email address for alarm notifications
+    Default: ""
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  
+  PoetryFunctionArn:
+    Description: "Poetry Generation Lambda Function ARN"
+    Value: !GetAtt PoetryFunction.Arn
+  
+  YouTubeFunctionArn:
+    Description: "YouTube Processing Lambda Function ARN"
+    Value: !GetAtt YouTubeFunction.Arn
+  
+  AlarmTopicArn:
+    Description: "SNS Topic ARN for alarm notifications"
+    Value: !Ref AlarmNotificationTopic

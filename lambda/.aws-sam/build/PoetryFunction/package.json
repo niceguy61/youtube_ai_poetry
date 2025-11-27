@@ -1,0 +1,16 @@
+{
+  "name": "poetry-function",
+  "version": "1.0.0",
+  "description": "Lambda function for AI poetry generation using AWS Bedrock",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -3,15 +3,18 @@
  * 
  * Custom React hook for managing poetry generation state.
  * Provides a clean interface to the PoetryGenerator service.
+ * Integrates with settings store for persona, language, and provider configuration.
  * 
  * Requirements: All UI-related poetry requirements (3.1, 3.2, 3.3, 3.5)
+ * Requirements: 1.2, 1.3, 4.3, 5.4, 6.2, 6.3 - Settings integration
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PoetryGenerator } from '../services/PoetryGenerator';
+import { useSettingsStore } from '../stores/settingsStore';
 import type { AudioFeatures } from '../types/audio';
 import type { InteractionData } from '../types/canvas';
-import type { AIProvider, PoetryStyle, Poem } from '../types/poetry';
+import type { AIProvider, PoetryStyle, Poem, PoetryGeneratorConfig } from '../types/poetry';
 
 export interface UsePoetryGeneratorReturn {
   // State
@@ -36,12 +39,17 @@ export interface UsePoetryGeneratorReturn {
 
 /**
  * Hook for managing poetry generation and state
+ * Automatically uses settings from the settings store
  * 
- * @param initialProvider - Optional initial AI provider
+ * @param initialProvider - Optional initial AI provider (overridden by settings)
  * @returns Poetry generator state and control functions
  */
 export function usePoetryGenerator(initialProvider?: AIProvider): UsePoetryGeneratorReturn {
   const generatorRef = useRef<PoetryGenerator | null>(null);
+  
+  // Get settings from store
+  // Requirements: 1.2, 1.3, 4.3, 5.4, 6.2, 6.3
+  const { settings } = useSettingsStore();
   
   const [currentPoem, setCurrentPoem] = useState<string | null>(null);
   const [poems, setPoems] = useState<Poem[]>([]);
@@ -53,13 +61,23 @@ export function usePoetryGenerator(initialProvider?: AIProvider): UsePoetryGener
   });
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize PoetryGenerator on mount
+  // Initialize PoetryGenerator on mount with settings
+  // Requirements: 1.2, 1.3, 4.3, 5.4, 6.2, 6.3
   useEffect(() => {
     if (!generatorRef.current) {
-      generatorRef.current = new PoetryGenerator(initialProvider);
+      // Create config from settings
+      const config: PoetryGeneratorConfig = {
+        persona: settings.persona,
+        language: settings.language,
+        provider: settings.provider,
+        model: settings.ollamaModel,
+        apiKey: settings.openaiApiKey || undefined,
+      };
+      
+      generatorRef.current = new PoetryGenerator(config, initialProvider);
       
       // Initialize asynchronously
-      generatorRef.current.initialize(initialProvider).catch((err) => {
+      generatorRef.current.initialize(settings.provider as AIProvider).catch((err) => {
         console.error('[usePoetryGenerator] Initialization error:', err);
       });
     }
@@ -68,7 +86,23 @@ export function usePoetryGenerator(initialProvider?: AIProvider): UsePoetryGener
     return () => {
       generatorRef.current = null;
     };
-  }, [initialProvider]);
+  }, [initialProvider, settings.persona, settings.language, settings.provider, settings.ollamaModel, settings.openaiApiKey]);
+
+  // Update generator configuration when settings change
+  // Requirements: 1.2, 1.3, 4.3, 5.4, 6.2, 6.3
+  useEffect(() => {
+    if (generatorRef.current) {
+      const config: Partial<PoetryGeneratorConfig> = {
+        persona: settings.persona,
+        language: settings.language,
+        provider: settings.provider,
+        model: settings.ollamaModel,
+        apiKey: settings.openaiApiKey || undefined,
+      };
+      
+      generatorRef.current.updateConfig(config);
+    }
+  }, [settings.persona, settings.language, settings.provider, settings.ollamaModel, settings.openaiApiKey]);
 
   // Sync poems from generator
   const syncPoems = useCallback(() => {

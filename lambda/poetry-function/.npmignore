@@ -1,0 +1,12 @@
+# Exclude from Lambda deployment package
+*.test.js
+*.spec.js
+test/
+tests/
+__tests__/
+coverage/
+.git/
+.gitignore
+README.md
+.DS_Store
+*.log

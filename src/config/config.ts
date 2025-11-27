@@ -62,7 +62,7 @@ export const CONFIG = {
     BEDROCK_MODEL_ID: import.meta.env.VITE_AWS_BEDROCK_MODEL_ID || 'anthropic.claude-3-haiku-20240307-v1:0',
     
     // Generation parameters
-    GENERATION_TIMEOUT: 10000, // 10 seconds timeout for AI generation
+    GENERATION_TIMEOUT: 180000, // 3 minutes (180 seconds) timeout for AI generation
     MAX_TOKENS: 200, // Maximum tokens for poetry generation
     TEMPERATURE: 0.7, // Creativity parameter (0-1)
     TOP_P: 0.9, // Nucleus sampling parameter
@@ -90,6 +90,16 @@ export const CONFIG = {
     ENABLE_TOUCH: true, // Enable touch interactions
     ENABLE_MOUSE: true, // Enable mouse interactions
     INTERACTION_DEBOUNCE: 50, // Debounce time for interactions in ms
+  },
+
+  /**
+   * API configuration
+   * Backend API endpoints for Lambda functions
+   */
+  api: {
+    ENDPOINT: import.meta.env.VITE_API_ENDPOINT || 'http://localhost:3001',
+    YOUTUBE_BACKEND_URL: import.meta.env.VITE_YOUTUBE_BACKEND_URL || 'http://localhost:3001',
+    TIMEOUT: 60000, // 60 seconds timeout for API requests
   },
 
   /**
@@ -142,7 +152,7 @@ export const CONFIG = {
  * Type exports for configuration
  */
 export type AIProvider = typeof CONFIG.ai.PROVIDER;
-export type VisualizationMode = 'gradient' | 'equalizer' | 'spotlight' | 'ai-image' | 'combined';
+export type VisualizationMode = 'gradient' | 'equalizer' | 'spotlight' | 'combined';
 export type NarrativeStyle = 'minimal' | 'descriptive' | 'poetic' | 'technical';
 export type LogLevel = typeof ENV.LOG_LEVEL;
 export type Environment = typeof ENV.MODE;

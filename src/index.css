@@ -3,11 +3,23 @@
 @layer base {
   :root {
     --radius: 0.5rem;
+    
+    /* Transition timing - Design System */
+    --transition-fast: 150ms;
+    --transition-normal: 300ms;
+    --transition-slow: 500ms;
+    --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
 :root {
   --radius: 0.5rem;
+  
+  /* Transition timing - Design System */
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+  --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Background - Dark with glassmorphism */
   --background: 0 0% 7%;
@@ -135,4 +147,381 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Spacing utilities - Design System */
+@layer utilities {
+  /* Gap utilities */
+  .gap-xs { gap: 0.5rem; }
+  .gap-sm { gap: 0.75rem; }
+  .gap-md { gap: 1rem; }
+  .gap-lg { gap: 1.5rem; }
+  .gap-xl { gap: 2rem; }
+  
+  /* Padding utilities */
+  .p-xs { padding: 0.5rem; }
+  .p-sm { padding: 0.75rem; }
+  .p-md { padding: 1rem; }
+  .p-lg { padding: 1.5rem; }
+  .p-xl { padding: 2rem; }
+  
+  /* Padding top utilities */
+  .pt-xs { padding-top: 0.5rem; }
+  .pt-sm { padding-top: 0.75rem; }
+  .pt-md { padding-top: 1rem; }
+  .pt-lg { padding-top: 1.5rem; }
+  .pt-xl { padding-top: 2rem; }
+  
+  /* Margin bottom utilities */
+  .mb-xs { margin-bottom: 0.5rem; }
+  .mb-sm { margin-bottom: 0.75rem; }
+  .mb-md { margin-bottom: 1rem; }
+  .mb-lg { margin-bottom: 1.5rem; }
+  .mb-xl { margin-bottom: 2rem; }
+  
+  /* Margin top utilities */
+  .mt-xs { margin-top: 0.5rem; }
+  .mt-sm { margin-top: 0.75rem; }
+  .mt-md { margin-top: 1rem; }
+  .mt-lg { margin-top: 1.5rem; }
+  .mt-xl { margin-top: 2rem; }
+  
+  /* Space-y utilities */
+  .space-y-xs > * + * { margin-top: 0.5rem; }
+  .space-y-sm > * + * { margin-top: 0.75rem; }
+  .space-y-md > * + * { margin-top: 1rem; }
+  .space-y-lg > * + * { margin-top: 1.5rem; }
+  .space-y-xl > * + * { margin-top: 2rem; }
+  
+  /* Transition utilities - Design System */
+  .transition-fast {
+    transition-duration: var(--transition-fast);
+    transition-timing-function: var(--transition-easing);
+  }
+  
+  .transition-normal {
+    transition-duration: var(--transition-normal);
+    transition-timing-function: var(--transition-easing);
+  }
+  
+  .transition-slow {
+    transition-duration: var(--transition-slow);
+    transition-timing-function: var(--transition-easing);
+  }
+  
+  /* Transition property utilities */
+  .transition-colors {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: var(--transition-easing);
+    transition-duration: var(--transition-normal);
+  }
+  
+  .transition-opacity {
+    transition-property: opacity;
+    transition-timing-function: var(--transition-easing);
+    transition-duration: var(--transition-normal);
+  }
+  
+  .transition-transform {
+    transition-property: transform;
+    transition-timing-function: var(--transition-easing);
+    transition-duration: var(--transition-normal);
+  }
+  
+  .transition-shadow {
+    transition-property: box-shadow;
+    transition-timing-function: var(--transition-easing);
+    transition-duration: var(--transition-normal);
+  }
+  
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: var(--transition-easing);
+    transition-duration: var(--transition-normal);
+  }
+  
+  /* Combined transitions for common use cases */
+  .transition-colors-fast {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: var(--transition-easing);
+    transition-duration: var(--transition-fast);
+  }
+  
+  .transition-colors-slow {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: var(--transition-easing);
+    transition-duration: var(--transition-slow);
+  }
+}
+
+/* Animation utilities - Design System */
+@layer utilities {
+  /* Fade-in animation */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in var(--transition-slow) var(--transition-easing);
+  }
+  
+  .animate-fade-in-fast {
+    animation: fade-in var(--transition-fast) var(--transition-easing);
+  }
+  
+  .animate-fade-in-normal {
+    animation: fade-in var(--transition-normal) var(--transition-easing);
+  }
+  
+  /* Slide-in animations */
+  @keyframes slide-in-from-top {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slide-in-from-bottom {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-in-from-top {
+    animation: slide-in-from-top var(--transition-normal) var(--transition-easing);
+  }
+  
+  .animate-slide-in-from-bottom {
+    animation: slide-in-from-bottom var(--transition-normal) var(--transition-easing);
+  }
+  
+  /* Loading spinner animation */
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  .animate-spin-slow {
+    animation: spin 2s linear infinite;
+  }
+  
+  .animate-spin-fast {
+    animation: spin 0.5s linear infinite;
+  }
+  
+  /* Pulse animation for loading states */
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Scale animation for hover effects */
+  @keyframes scale-in {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .animate-scale-in {
+    animation: scale-in var(--transition-normal) var(--transition-easing);
+  }
+  
+  /* Backdrop fade-in for dialogs */
+  @keyframes backdrop-fade-in {
+    from {
+      background-color: rgba(0, 0, 0, 0);
+    }
+    to {
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+  }
+  
+  .animate-backdrop-fade-in {
+    animation: backdrop-fade-in var(--transition-normal) var(--transition-easing);
+  }
+  
+  /* Dialog entry animation */
+  @keyframes dialog-enter {
+    from {
+      transform: scale(0.95) translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-dialog-enter {
+    animation: dialog-enter var(--transition-normal) var(--transition-easing);
+  }
+  
+  /* Hover scale effect */
+  .hover-scale:hover {
+    transform: scale(1.05);
+    transition: transform var(--transition-fast) var(--transition-easing);
+  }
+  
+  /* Hover lift effect */
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform var(--transition-fast) var(--transition-easing),
+                box-shadow var(--transition-fast) var(--transition-easing);
+  }
+  
+  /* Hover brightness effect */
+  .hover-brighten:hover {
+    filter: brightness(1.1);
+    transition: filter var(--transition-fast) var(--transition-easing);
+  }
+  
+  /* Focus visible utilities for keyboard navigation */
+  .focus-ring:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  
+  .focus-ring-primary:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+  
+  /* Active state utilities for click feedback */
+  .active-scale:active {
+    transform: scale(0.95);
+    transition: transform var(--transition-fast) var(--transition-easing);
+  }
+  
+  .active-brightness:active {
+    filter: brightness(0.9);
+    transition: filter var(--transition-fast) var(--transition-easing);
+  }
+  
+  /* Loading state utilities */
+  .loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .loading-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  /* Success/Error feedback animations */
+  @keyframes success-bounce {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+  
+  .animate-success-bounce {
+    animation: success-bounce var(--transition-normal) var(--transition-easing);
+  }
+  
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+  
+  .animate-shake {
+    animation: shake var(--transition-normal) var(--transition-easing);
+  }
+  
+  /* Ripple effect for buttons */
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+  
+  .ripple-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .ripple-effect::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width var(--transition-fast) var(--transition-easing),
+                height var(--transition-fast) var(--transition-easing);
+  }
+  
+  .ripple-effect:active::after {
+    width: 100px;
+    height: 100px;
+    animation: ripple var(--transition-normal) var(--transition-easing);
+  }
 }

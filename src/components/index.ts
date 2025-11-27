@@ -8,3 +8,5 @@ export { StorytellingDisplay } from './StorytellingDisplay';
 export { YouTubePlayer, useYouTubePlayer } from './YouTubePlayer';
 export { AudioPlayer, useAudioPlayerControl } from './AudioPlayer';
 export { MusicInfo } from './MusicInfo';
+export { SettingsPanel } from './SettingsPanel';
+export { AudioMetadataCard } from './AudioMetadataCard';

@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Billing Alerts for Music Poetry Canvas Backend
+
+Parameters:
+  AlarmEmail:
+    Type: String
+    Description: Email address for billing alerts
+    AllowedPattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+    ConstraintDescription: Must be a valid email address
+
+Resources:
+  # SNS Topic for Billing Alerts
+  BillingAlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: music-poetry-billing-alerts
+      DisplayName: Music Poetry Billing Alerts
+      Subscription:
+        - Endpoint: !Ref AlarmEmail
+          Protocol: email
+
+  # Warning Alarm - $5 threshold (50% of target budget)
+  BillingAlarmWarning:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: music-poetry-billing-warning-5usd
+      AlarmDescription: Alert when estimated charges exceed $5 (50% of budget)
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref BillingAlertTopic
+      MetricName: EstimatedCharges
+      Namespace: AWS/Billing
+      Statistic: Maximum
+      Period: 21600  # 6 hours
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Currency
+          Value: USD
+      TreatMissingData: notBreaching
+
+  # Critical Alarm - $10 threshold (100% of target budget)
+  BillingAlarmCritical:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: music-poetry-billing-critical-10usd
+      AlarmDescription: Alert when estimated charges exceed $10 (100% of budget)
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref BillingAlertTopic
+      MetricName: EstimatedCharges
+      Namespace: AWS/Billing
+      Statistic: Maximum
+      Period: 21600  # 6 hours
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Currency
+          Value: USD
+      TreatMissingData: notBreaching
+
+  # Emergency Alarm - $20 threshold (200% of target budget)
+  BillingAlarmEmergency:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: music-poetry-billing-emergency-20usd
+      AlarmDescription: Alert when estimated charges exceed $20 (200% of budget)
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref BillingAlertTopic
+      MetricName: EstimatedCharges
+      Namespace: AWS/Billing
+      Statistic: Maximum
+      Period: 21600  # 6 hours
+      EvaluationPeriods: 1
+      Threshold: 20
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Currency
+          Value: USD
+      TreatMissingData: notBreaching
+
+Outputs:
+  TopicArn:
+    Description: SNS Topic ARN for billing alerts
+    Value: !Ref BillingAlertTopic
+    Export:
+      Name: !Sub "${AWS::StackName}-TopicArn"
+  
+  WarningAlarmArn:
+    Description: Warning alarm ARN ($5 threshold)
+    Value: !GetAtt BillingAlarmWarning.Arn
+  
+  CriticalAlarmArn:
+    Description: Critical alarm ARN ($10 threshold)
+    Value: !GetAtt BillingAlarmCritical.Arn
+  
+  EmergencyAlarmArn:
+    Description: Emergency alarm ARN ($20 threshold)
+    Value: !GetAtt BillingAlarmEmergency.Arn

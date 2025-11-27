@@ -6,6 +6,7 @@ import { CONFIG } from '../config/config';
 import { AIProviderService } from './AIProviderService';
 import { OllamaProvider } from './OllamaProvider';
 import { BedrockProvider } from './BedrockProvider';
+import { OpenAIProvider } from './OpenAIProvider';
 import type { AIProvider, ProviderConfig } from '../types/poetry';
 
 /**
@@ -31,6 +32,10 @@ export function createAIProvider(
         secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '',
       },
     },
+    openai: {
+      apiKey: '', // Will be set from settings store
+      model: 'gpt-3.5-turbo',
+    },
   };
 
   switch (selectedProvider) {
@@ -39,6 +44,9 @@ export function createAIProvider(
     
     case 'bedrock':
       return new BedrockProvider(config);
+    
+    case 'openai':
+      return new OpenAIProvider(config);
     
     default:
       throw new Error(`Unknown AI provider: ${selectedProvider}`);
